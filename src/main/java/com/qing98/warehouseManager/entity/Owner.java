@@ -1,5 +1,11 @@
 package com.qing98.warehouseManager.entity;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.qing98.warehouseManager.Config;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.format.annotation.DateTimeFormat;
+
 import javax.persistence.*;
 import java.time.LocalDateTime;
 
@@ -8,39 +14,36 @@ import java.time.LocalDateTime;
  */
 @Entity
 public class Owner {
+    private final static Logger logger = LoggerFactory.getLogger(Owner.class.getName());
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String name;
     private String phoneNumber;
+    private String note;
     private LocalDateTime dateRegistration;
 
     protected Owner() {
     }
 
-    public Owner(String name) {
-        this.name = name;
-    }
-
-    public Owner(String name, String phoneNumber) {
-        this.name = name;
-        this.phoneNumber = phoneNumber;
+    public boolean check() {
+        if (name == null || name.isBlank()) {
+            logger.warn("Owner check failed: no name");
+            return false;
+        }
+        return true;
     }
 
     public Long getId() {
         return id;
     }
 
-    public void setId(Long id) {
-        this.id = id;
+    public void setName(String name) {
+        this.name = name;
     }
 
     public String getName() {
         return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
     }
 
     public String getPhoneNumber() {
@@ -51,8 +54,16 @@ public class Owner {
         this.phoneNumber = phoneNumber;
     }
 
-    public LocalDateTime getDateRegistration() {
-        return dateRegistration;
+    public String getDateRegistration() {
+        return dateRegistration.format(Config.FORMATTER);
+    }
+
+    public String getNote() {
+        return note;
+    }
+
+    public void setNote(String note) {
+        this.note = note;
     }
 
     @PrePersist

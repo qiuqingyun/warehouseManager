@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="zh-cmn-Hans">
+<head>
+    <meta charset="UTF-8">
+    <title>物品管理系统</title>
+    <link rel="stylesheet" type="text/css" href="https://www.layuicdn.com/layui-v2.6.8/css/layui.css"/>
+    <link rel="stylesheet" href="global.css">
+</head>
+<body>
+<div class="layui-layout layui-layout-admin">
+    <!-- 顶部固定区域 -->
+    <div class="layui-header">
+        <div class="layui-logo layui-hide-xs layui-bg-black">物品管理系统</div>
+        <ul class="layui-nav layui-layout-right">
+            <li class="layui-nav-item layui-hide layui-show-md-inline-block">
+                <a href="javascript:" id="main-user-name-show">用户名</a>
+                <dl class="layui-nav-child">
+                    <dd><a href="javascript:" onclick="">账户信息</a></dd>
+                    <dd><a href="javascript:" onclick="">系统设置</a></dd>
+                    <dd><a href="javascript:" onclick="">退出登录</a></dd>
+                </dl>
+            </li>
+        </ul>
+    </div>
+    <!-- 左侧导航区域 -->
+    <div class="layui-side layui-bg-black">
+        <div class="layui-side-scroll">
+            <ul class="layui-nav layui-nav-tree">
+                <li class="layui-nav-item" tabId="page-overview" onclick="switchPage(this)"><a
+                        href="javascript:">总览</a></li>
+                <li class="layui-nav-item layui-this" tabId="page-data" onclick="switchPage(this)"><a
+                        href="javascript:">物品管理</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+    <!-- 内容主体区域 -->
+    <div class="layui-body">
+        <!-- 总览页 -->
+        <div class="body-container layui-hide" id="page-overview">
+            <div class="content-container">
+                <div class="layui-card layui-panel">
+                    <div class="layui-card-header">
+                        总览
+                    </div>
+                    <div class="layui-card-body">
+
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- 物品管理页 -->
+        <div class="body-container" id="page-data">
+            <div class="layui-tab layui-tab-brief">
+                <!-- 标签 -->
+                <ul class="layui-tab-title">
+                    <li class="layui-this"><a href="javascript:" onclick="" id="button-form-addItem">登记物品</a></li>
+                    <li><a href="javascript:" onclick="renderTable('order')" id="button-order">订购中的</a></li>
+                    <li><a href="javascript:" onclick="renderTable('keep')" id="button-keep">库存中的</a></li>
+                    <li><a href="javascript:" onclick="renderTable('export')" id="button-export">已出库的</a></li>
+                    <li><a href="javascript:" onclick="renderTableFilter()" id="button-filter">筛选物品</a></li>
+                </ul>
+                <!-- 标签内容 -->
+                <div class="layui-tab-content">
+                    <!-- 登记新的 -->
+                    <div class="layui-tab-item layui-show">
+                        <div class="content-container">
+                            <form class="layui-form layui-form-pane" id="form-addItem"
+                                  style="margin: 8px auto auto;width: 800px;">
+                                <!-- 名称 -->
+                                <div class="layui-form-item">
+                                    <div class="layui-row layui-col-space15">
+                                        <div class="layui-col-md12">
+                                            <label class="layui-form-label">物品名称</label>
+                                            <div class="layui-input-block">
+                                                <input type="text" name="name" required lay-verify="required"
+                                                       placeholder="请输入物品名称" autocomplete="off" class="layui-input">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- 状态和所有者 -->
+                                <div class="layui-form-item">
+                                    <div class="layui-row layui-col-space15">
+                                        <div class="layui-col-md6">
+                                            <label class="layui-form-label">物品所有者</label>
+                                            <div class="layui-input-block">
+                                                <input type="text" name="name" placeholder="点击选择物品所有者"
+                                                       autocomplete="off" onclick="ownerListShow()"
+                                                       id="owner-input" class="layui-input pointer" readonly>
+                                            </div>
+                                        </div>
+                                        <div class="layui-col-md6">
+                                            <input type="radio" lay-filter="status-radio" name="status" value="order"
+                                                   title="订购中" checked>
+                                            <input type="radio" lay-filter="status-radio" name="status" value="keep"
+                                                   title="在库中">
+                                            <input type="radio" lay-filter="status-radio" name="status" value="export"
+                                                   title="已出库">
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- 入库和出库时间 -->
+                                <div class="layui-form-item layui-hide" id="date-container">
+                                    <div class="layui-row layui-col-space15">
+                                        <div class="layui-col-md6 layui-hide" id="dateInto-container">
+                                            <label class="layui-form-label">入库时间</label>
+                                            <div class="layui-input-block">
+                                                <input type="text" class="layui-input pointer" id="dateInto"
+                                                       placeholder="点击选择入库时间" autocomplete="off" readonly>
+                                            </div>
+                                        </div>
+                                        <div class="layui-col-md6 layui-hide" id="dateLeave-container">
+                                            <label class="layui-form-label">出库时间</label>
+                                            <div class="layui-input-block">
+                                                <input type="text" class="layui-input pointer" id="dateLeave"
+                                                       placeholder="点击选择出库时间" autocomplete="off" readonly>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- 物品属性 -->
+                                <div class="layui-form-item">
+                                    <div class="layui-row layui-col-space15">
+                                        <!-- 物品长度 -->
+                                        <div class="layui-col-md3">
+                                            <label class="layui-form-label">物品长度</label>
+                                            <div class="layui-input-block">
+                                                <input type="number" name="length" placeholder="毫米" autocomplete="off"
+                                                       class="layui-input">
+                                            </div>
+                                        </div>
+                                        <!-- 物品宽度 -->
+                                        <div class="layui-col-md3">
+                                            <label class="layui-form-label">物品宽度</label>
+                                            <div class="layui-input-block">
+                                                <input type="number" name="width" placeholder="毫米" autocomplete="off"
+                                                       class="layui-input">
+                                            </div>
+                                        </div>
+                                        <!-- 物品高度 -->
+                                        <div class="layui-col-md3">
+                                            <label class="layui-form-label">物品高度</label>
+                                            <div class="layui-input-block">
+                                                <input type="number" name="height" placeholder="毫米" autocomplete="off"
+                                                       class="layui-input">
+                                            </div>
+                                        </div>
+                                        <!-- 架构 -->
+                                        <div class="layui-col-md3">
+                                            <label class="layui-form-label">物品架构</label>
+                                            <div class="layui-input-block">
+                                                <input type="text" name="architecture" placeholder="x86"
+                                                       autocomplete="off"
+                                                       class="layui-input">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- 物品描述 -->
+                                <div class="layui-form-item layui-form-text">
+                                    <div class="layui-row layui-col-space15">
+                                        <div class="layui-col-md12">
+                                            <label class="layui-form-label">物品描述</label>
+                                            <div class="layui-input-block">
+                                                <textarea name="description" placeholder="请输入物品描述"
+                                                          class="layui-textarea"></textarea>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- 提交表单 -->
+                                <div class="layui-form-item">
+                                    <div class="layui-row layui-col-space15">
+                                        <div class="layui-col-md12">
+                                            <button class="layui-btn" lay-submit lay-filter="formDemo">立即提交</button>
+                                            <button type="reset" class="layui-btn layui-btn-primary">重置</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                    <!-- 订购中的 -->
+                    <div class="layui-tab-item">
+                        <div class="content-container">
+                            <table id="table-order" lay-filter="table-order"></table>
+                        </div>
+                    </div>
+                    <!-- 库存中的 -->
+                    <div class="layui-tab-item">
+                        <div class="content-container">
+                            <table id="table-keep" lay-filter="table-keep"></table>
+                        </div>
+                    </div>
+                    <!-- 已出库的 -->
+                    <div class="layui-tab-item">
+                        <div class="content-container">
+                            <table id="table-export" lay-filter="table-export"></table>
+                        </div>
+                    </div>
+                    <!-- 筛选物品 -->
+                    <div class="layui-tab-item">
+                        <div class="content-container">
+                            <table id="table-filter" lay-filter="table-filter"></table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script src="https://www.layuicdn.com/layui-v2.6.8/layui.js"></script>
+<script src="global.js"></script>
+</body>
+</html>

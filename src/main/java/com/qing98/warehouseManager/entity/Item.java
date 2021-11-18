@@ -103,7 +103,7 @@ public class Item {
     /**
      * 物品描述
      */
-    private String description = "";
+    private String description;
 
     /**
      * 检查元数据正确性

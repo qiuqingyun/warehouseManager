@@ -85,7 +85,7 @@
                                         <div class="layui-col-md6">
                                             <label class="layui-form-label">物品所有者</label>
                                             <div class="layui-input-block">
-                                                <input type="text" name="name" placeholder="点击选择物品所有者"
+                                                <input type="text" name="ownerId" placeholder="点击选择物品所有者"
                                                        autocomplete="off" onclick="ownerListShow()"
                                                        id="owner-input" class="layui-input pointer" readonly>
                                             </div>
@@ -107,14 +107,16 @@
                                             <label class="layui-form-label">入库时间</label>
                                             <div class="layui-input-block">
                                                 <input type="text" class="layui-input pointer" id="dateInto"
-                                                       placeholder="点击选择入库时间" autocomplete="off" readonly>
+                                                       name="dateInto" placeholder="点击选择入库时间" autocomplete="off"
+                                                       readonly lay-verify="dateIntoVerify">
                                             </div>
                                         </div>
                                         <div class="layui-col-md6 layui-hide" id="dateLeave-container">
                                             <label class="layui-form-label">出库时间</label>
                                             <div class="layui-input-block">
                                                 <input type="text" class="layui-input pointer" id="dateLeave"
-                                                       placeholder="点击选择出库时间" autocomplete="off" readonly>
+                                                       name="dateLeave" placeholder="点击选择出库时间" autocomplete="off"
+                                                       readonly lay-verify="dateLeaveVerify">
                                             </div>
                                         </div>
                                     </div>
@@ -171,12 +173,8 @@
                                 </div>
                                 <!-- 提交表单 -->
                                 <div class="layui-form-item">
-                                    <div class="layui-row layui-col-space15">
-                                        <div class="layui-col-md12">
-                                            <button class="layui-btn" lay-submit lay-filter="formDemo">立即提交</button>
-                                            <button type="reset" class="layui-btn layui-btn-primary">重置</button>
-                                        </div>
-                                    </div>
+                                    <button class="layui-btn" lay-submit lay-filter="form-item-submit">立即提交</button>
+                                    <button type="reset" class="layui-btn layui-btn-primary" id="form-item-reset">重置</button>
                                 </div>
                             </form>
                         </div>

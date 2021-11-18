@@ -47,7 +47,6 @@ function renderFormAddItem() {
     });
 }
 
-
 //渲染筛选物品表格
 function renderTableFilter() {
 
@@ -123,9 +122,6 @@ function renderOwnerTable() {
         });
         table.on('row(table-owner)', function (obj) {
             obj.tr[0].firstChild.firstChild.childNodes[1].click();
-        });
-        table.on('radio(table-owner)', function (obj) { //test 是 table 标签对应的 lay-filter 属性
-            ownerChosen = obj.data.id;
         });
     });
 }
@@ -246,21 +242,24 @@ function ownerListShow(uuid) {
             renderOwnerTable();
         }
         , yes: function (index, layero) {
-            if (ownerChosen === undefined) {
+            var checkStatus = layui.table.checkStatus('table-owner');
+            console.log(checkStatus.data) //获取选中行的数据
+            console.log(checkStatus.data.length) //获取选中行数量，可作为是否有选中行的条件
+            console.log(checkStatus.isAll ) //表格是否全选
+            if (checkStatus.data.length === 0) {
                 //防止没有选择
                 layer.msg('请选择一名所有者', {icon: 0});
             } else {
                 if (uuid !== undefined) {
                     layer.confirm('确定为物品添加所有者？', function () {
-                        addNewOwner(uuid, ownerChosen).then(function () {
-                            ownerChosen = undefined;
+                        addNewOwner(uuid, checkStatus.data[0].id).then(function () {
                             layer.closeAll();
                             itemInfoShow(uuid);
                         });
                     });
                 } else {
-                    document.getElementById('owner-input').value = ownerChosen;
-                    ownerChosen = undefined;
+                    document.getElementById('owner-input').value = checkStatus.data[0].name;
+                    ownerChosen = checkStatus.data[0].id;
                     layer.closeAll();
                 }
             }

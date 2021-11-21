@@ -191,7 +191,9 @@ window.onload = function () {
 //提交新物品
 async function submitItem(submit) {
     let data = submit.field;
-    data.ownerId = ownerChosen;
+    if (data.ownerId !== '') {
+        data.ownerId = ownerChosen;
+    }
     ownerChosen = '';
     if (data.length === '') {
         data.length = 0;
@@ -500,54 +502,35 @@ function ownerCreateShow(uuid) {
         , yes: function (index, layero) {
             document.getElementById('form-owner-create-submit').click();
             window.setTimeout(() => {
-                layer.confirm('确定新建所有者，并添加为物品的所有者？', function () {
-                    createNewOwner().then((e) => {
-                        if (e !== undefined) {
-                            if (uuid === 'undefined') {
-                                document.getElementById('owner-input').value = e.name;
-                                ownerChosen = e.id;
-                                layer.closeAll();
-                            } else {
-                                console.log('为物品' + uuid + '添加新的所有者' + e.id);
-                                addNewOwner(uuid, e.id).then(function () {
+                if (createOwnerFlag) {
+                    createOwnerFlag = false;
+                    layer.confirm('确定新建所有者，并添加为物品的所有者？', function () {
+                        createNewOwner().then((e) => {
+                            if (e !== undefined) {
+                                if (uuid === 'undefined') {
+                                    document.getElementById('owner-input').value = e.name;
+                                    ownerChosen = e.id;
                                     layer.closeAll();
-                                    itemInfoShow(uuid);
-                                });
+                                } else {
+                                    console.log('为物品' + uuid + '添加新的所有者' + e.id);
+                                    addNewOwner(uuid, e.id).then(function () {
+                                        layer.closeAll();
+                                        itemInfoShow(uuid);
+                                    });
+                                }
                             }
-                        }
+                        });
                     });
-                });
-            }, 10);
-
-            // var checkStatus = layui.table.checkStatus('table-owner');
-            // if (checkStatus.data.length === 0) {
-            //     //防止没有选择
-            //     layer.msg('请选择一名所有者', {icon: 0});
-            // } else {
-            //     if (uuid !== undefined) {
-            //         layer.confirm('确定为物品添加所有者？', function () {
-            //             addNewOwner(uuid, checkStatus.data[0].id).then(function () {
-            //                 layer.closeAll();
-            //                 itemInfoShow(uuid);
-            //             });
-            //         });
-            //     } else {
-            //         document.getElementById('owner-input').value = checkStatus.data[0].name;
-            //         ownerChosen = checkStatus.data[0].id;
-            //         layer.closeAll();
-            //     }
-            // }
+                }
+            }, 100);
             return false;
         }
     });
 }
 
 async function createNewOwner() {
-    if (createOwnerFlag) {
-        createOwnerFlag = false;
-        let data = layui.form.val("form-owner-create");
-        return await postData('/owner/add', data);
-    }
+    let data = layui.form.val("form-owner-create");
+    return await postData('/owner/add', data);
 }
 
 //AJAX get

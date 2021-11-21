@@ -25,10 +25,20 @@ const conditionName = {
 };
 let tabShowNow = "page-data"
 let ownerChosen = '';
+let createOwnerFlag = false;
 window.onload = function () {
     renderTableFilter();
-    renderFormAddItem();
+    //渲染时间选择控件
+    let inputs = ['#dateInto', '#dateLeave', '#form-filterItem-date-select', '#form-filterItem-date-select-range-start', '#form-filterItem-date-select-range-end'];
+    for (let i = 0; i < inputs.length; i++) {
+        layui.laydate.render({
+            elem: inputs[i]
+            , type: 'datetime'
+            , max: '23:59:59'
+        });
+    }
     let form = layui.form;
+    //提交按钮回调
     form.on('submit(form-addItem-submit)', function (submit) {
         submitItem(submit).then(() => {
             layui.layer.msg('提交成功', {icon: 1});
@@ -41,11 +51,43 @@ window.onload = function () {
     });
     form.on('submit(form-filterItem-submit)', function (submit) {
         let data = submit.field;
-        console.log(conditionName[data.condition])
-        renderTableFilter(data.condition, data.word, data.word1);
         document.getElementById('filter-criteria-show').innerText = conditionName[data.condition];
+        let word;
+        let word2 = '';
+        switch (data.condition) {
+            case 'dateRecord':
+            case 'dateInto':
+            case 'dateLeave': {
+                word = data['word-date'];
+                break;
+            }
+            case 'dateRecordRange':
+            case 'dateIntoRange':
+            case 'dateLeaveRange': {
+                word = data['word-date-start'];
+                word2 = data['word-date-end'];
+                break;
+            }
+            case 'lengthRange':
+            case 'widthRange':
+            case 'heightRange': {
+                word = data['word-start'];
+                word2 = data['word-end'];
+                break;
+            }
+            default: {
+                word = data.word;
+                break;
+            }
+        }
+        renderTableFilter(data.condition, word, word2);
         return false;
     });
+    form.on('submit(form-owner-create-submit)', function (data) {
+        createOwnerFlag = true;
+        return false;
+    });
+    //选择事件回调
     form.on('radio(status-radio)', function (data) {
         switch (data.value) {
             case 'order': {//使入库时间和出库时间不可用
@@ -71,8 +113,44 @@ window.onload = function () {
             }
         }
     });
-    //todo 监听筛选条件选择框，在特定的时候弹出两个框
-
+    form.on('select(form-filterItem-select)', function (data) {
+        switch (data.value) {
+            case 'dateRecord':
+            case 'dateInto':
+            case 'dateLeave': {
+                document.getElementById('form-filterItem-input').classList.add('layui-hide');
+                document.getElementById('form-filterItem-date-select').classList.remove('layui-hide');
+                document.getElementById('form-filterItem-date-select-range-search-row').classList.add('layui-hide');
+                document.getElementById('form-filterItem-input-range-search-row').classList.add('layui-hide');
+                break;
+            }
+            case 'dateRecordRange':
+            case 'dateIntoRange':
+            case 'dateLeaveRange': {
+                document.getElementById('form-filterItem-input').classList.add('layui-hide');
+                document.getElementById('form-filterItem-date-select').classList.add('layui-hide');
+                document.getElementById('form-filterItem-date-select-range-search-row').classList.remove('layui-hide');
+                document.getElementById('form-filterItem-input-range-search-row').classList.add('layui-hide');
+                break;
+            }
+            case 'lengthRange':
+            case 'widthRange':
+            case 'heightRange': {
+                document.getElementById('form-filterItem-input').classList.add('layui-hide');
+                document.getElementById('form-filterItem-date-select').classList.add('layui-hide');
+                document.getElementById('form-filterItem-date-select-range-search-row').classList.add('layui-hide');
+                document.getElementById('form-filterItem-input-range-search-row').classList.remove('layui-hide');
+                break;
+            }
+            default: {
+                document.getElementById('form-filterItem-input').classList.remove('layui-hide');
+                document.getElementById('form-filterItem-date-select').classList.add('layui-hide');
+                document.getElementById('form-filterItem-date-select-range-search-row').classList.add('layui-hide');
+                document.getElementById('form-filterItem-input-range-search-row').classList.add('layui-hide');
+                break;
+            }
+        }
+    });
     form.verify({
         dateIntoVerify: function (value, item) { //value：表单的值、item：表单的DOM对象
             if (!document.getElementById('date-container').classList.contains('layui-hide')) {
@@ -108,19 +186,6 @@ window.onload = function () {
             }
         }
     });
-}
-
-//渲染登记新物品表单
-function renderFormAddItem() {
-    //渲染时间选择控件
-    let inputs = ['#dateInto', '#dateLeave'];
-    for (let i = 0; i < 2; i++) {
-        layui.laydate.render({
-            elem: inputs[i]
-            , type: 'datetime'
-            , max: '23:59:59'
-        });
-    }
 }
 
 //提交新物品
@@ -192,7 +257,7 @@ function renderTable(status) {
 }
 
 //渲染筛选物品表格
-function renderTableFilter(condition, word, word1) {
+function renderTableFilter(condition, word, word2) {
     layui.use('table', function () {
         let table = layui.table;
         let url = '/item/get/condition/';
@@ -203,7 +268,7 @@ function renderTableFilter(condition, word, word1) {
         table.render({
             elem: '#table-filter'
             , url: url //数据接口
-            , where: {'condition': condition, 'word': word, 'word1': word1}
+            , where: {'condition': condition, 'word': word, 'word2': word2}
             , page: true //开启分页
             , loading: true
             , cols: [[//已出库的表头
@@ -219,32 +284,6 @@ function renderTableFilter(condition, word, word1) {
         });
         table.on('row(table-filter)', function (obj) {
             itemInfoShow(obj.data.uuid);
-        });
-    });
-}
-
-//渲染所有者表格
-function renderOwnerTable() {
-    layui.use('table', function () {
-        let table = layui.table;
-        table.render({
-            elem: '#table-owner'
-            , url: '/owner/get/all/' //数据接口
-            , height: 370
-            , page: true //开启分页
-            , loading: true
-            , cols: [[ //所有者信息表头
-                {type: 'radio', unresize: true, width: 50}
-                , {field: 'name', title: '所有者名称', unresize: true, minWidth: 200}
-                , {field: 'note', title: '备注', unresize: true, minWidth: 200}
-                , {field: 'id', title: '所有者编号', width: 300, unresize: true, hide: true}
-            ]]
-            , done: function (res, curr, count) {
-                $('.table-owner-choose td').css({'cursor': 'pointer'}); //设置成指针放在表格上换成手指
-            }
-        });
-        table.on('row(table-owner)', function (obj) {
-            obj.tr[0].firstChild.firstChild.childNodes[1].click();
         });
     });
 }
@@ -350,12 +389,13 @@ async function inOrOut(status, uuid) {
 //显示添加所有者弹窗
 function ownerListShow(uuid) {
     let table = '<table id="table-owner" lay-filter="table-owner"></table>';
-    let tableContainer = '<div class="table-owner-choose">' + table + '</div>';
+    let button = '<button type="button" class="layui-btn layui-btn-fluid button-create-new-owner" onclick="ownerCreateShow(\'' + uuid + '\')">添加新的所有者</button>';
+    let tableContainer = '<div class="table-owner-choose">' + button + table + '</div>';
     layer.open({
         type: 1
         , title: '选择所有者'
         , content: tableContainer
-        , area: ['700px', '500px']
+        , area: ['700px', '560px']
         , shadeClose: true
         , resize: false
         , fixed: true
@@ -388,9 +428,126 @@ function ownerListShow(uuid) {
     });
 }
 
+//渲染所有者表格
+function renderOwnerTable() {
+    layui.use('table', function () {
+        let table = layui.table;
+        table.render({
+            elem: '#table-owner'
+            , url: '/owner/get/all/' //数据接口
+            , height: 370
+            , page: true //开启分页
+            , loading: true
+            , cols: [[ //所有者信息表头
+                {type: 'radio', unresize: true, width: 50}
+                , {field: 'name', title: '所有者名称', unresize: true, minWidth: 200}
+                , {field: 'note', title: '备注', unresize: true, minWidth: 200}
+                , {field: 'id', title: '所有者编号', width: 300, unresize: true, hide: true}
+            ]]
+            , done: function (res, curr, count) {
+                $('.table-owner-choose td').css({'cursor': 'pointer'}); //设置成指针放在表格上换成手指
+            }
+        });
+        table.on('row(table-owner)', function (obj) {
+            obj.tr[0].firstChild.firstChild.childNodes[1].click();
+        });
+    });
+}
+
 //为物品添加所有者
 async function addNewOwner(uuid, id) {
     await postData('/item/addOwner?uuid=' + uuid + '&id=' + id);
+}
+
+//显示添加新的所有者弹窗
+function ownerCreateShow(uuid) {
+    let formName = '<div class="layui-form-item">\n' +
+        '    <label class="layui-form-label">名称</label>\n' +
+        '    <div class="layui-input-block">\n' +
+        '      <input type="text" name="name" required lay-verify="required" placeholder="请输入所有者的名称" autocomplete="off" class="layui-input">\n' +
+        '    </div>\n' +
+        '  </div>';
+    let formPhoneNumber = '<div class="layui-form-item">\n' +
+        '    <label class="layui-form-label">电话</label>\n' +
+        '    <div class="layui-input-block">\n' +
+        '      <input type="tel" name="phone" placeholder="请输入所有者的电话" autocomplete="off" class="layui-input">\n' +
+        '    </div>\n' +
+        '  </div>';
+    let formNote = '<div class="layui-form-item layui-form-text">\n' +
+        '    <label class="layui-form-label">备注</label>\n' +
+        '    <div class="layui-input-block">\n' +
+        '      <textarea name="note" placeholder="请输入内容" class="layui-textarea" style="padding-top: 9px"></textarea>\n' +
+        '    </div>';
+    let formSubmit = '<div class="layui-form-item layui-hide">\n' +
+        '    <div class="layui-input-block">\n' +
+        '      <button class="layui-btn" lay-submit lay-filter="form-owner-create-submit" id="form-owner-create-submit">提交</button>\n' +
+        '    </div>\n' +
+        '  </div>';
+    let formContainer = '<form class="layui-form" id="form-owner-create" lay-filter="form-owner-create"></form>';
+    layer.open({
+        type: 1
+        , title: '创建新的所有者'
+        , content: formContainer
+        , area: ['600px', '400px']
+        , shadeClose: true
+        , resize: false
+        , fixed: true
+        , btn: ['创建', '返回']
+        , closeBtn: 0
+        , success: function (layero, index) {
+            document.getElementById('form-owner-create').innerHTML = formName + formPhoneNumber + formNote + formSubmit;
+        }
+        , yes: function (index, layero) {
+            document.getElementById('form-owner-create-submit').click();
+            window.setTimeout(() => {
+                layer.confirm('确定新建所有者，并添加为物品的所有者？', function () {
+                    createNewOwner().then((e) => {
+                        if (e !== undefined) {
+                            if (uuid === 'undefined') {
+                                document.getElementById('owner-input').value = e.name;
+                                ownerChosen = e.id;
+                                layer.closeAll();
+                            } else {
+                                console.log('为物品' + uuid + '添加新的所有者' + e.id);
+                                addNewOwner(uuid, e.id).then(function () {
+                                    layer.closeAll();
+                                    itemInfoShow(uuid);
+                                });
+                            }
+                        }
+                    });
+                });
+            }, 10);
+
+            // var checkStatus = layui.table.checkStatus('table-owner');
+            // if (checkStatus.data.length === 0) {
+            //     //防止没有选择
+            //     layer.msg('请选择一名所有者', {icon: 0});
+            // } else {
+            //     if (uuid !== undefined) {
+            //         layer.confirm('确定为物品添加所有者？', function () {
+            //             addNewOwner(uuid, checkStatus.data[0].id).then(function () {
+            //                 layer.closeAll();
+            //                 itemInfoShow(uuid);
+            //             });
+            //         });
+            //     } else {
+            //         document.getElementById('owner-input').value = checkStatus.data[0].name;
+            //         ownerChosen = checkStatus.data[0].id;
+            //         layer.closeAll();
+            //     }
+            // }
+            return false;
+        }
+    });
+}
+
+async function createNewOwner() {
+    if (createOwnerFlag) {
+        createOwnerFlag = false;
+        let data = layui.form.val("form-owner-create");
+        return await postData('/owner/add', data);
+    }
 }
 
 //AJAX get

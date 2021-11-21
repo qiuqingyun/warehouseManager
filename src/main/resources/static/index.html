@@ -209,7 +209,7 @@
                                         <div class="layui-col-md4">
                                             <label class="layui-form-label">筛选条件</label>
                                             <div class="layui-input-block">
-                                                <select name="condition">
+                                                <select name="condition" lay-filter="form-filterItem-select">
                                                     <option value="all">查看所有</option>
                                                     <option value="name">物品名称</option>
                                                     <option value="uuid">物品编号</option>
@@ -236,13 +236,13 @@
                                         </div>
                                         <div class="layui-col-md8">
                                             <input id="form-filterItem-input" name="word"
-                                                   class="layui-input layui-hide" type="text"
+                                                   class="layui-input" type="text"
                                                    placeholder="请输入筛选内容" autocomplete="off">
                                             <input id="form-filterItem-date-select" name="word-date"
                                                    class="layui-input pointer layui-hide" type="text"
                                                    placeholder="点击选择时间" autocomplete="off" readonly>
                                             <div id="form-filterItem-date-select-range-search-row"
-                                                 class="layui-row layui-hide">
+                                                 class="layui-row row-inline layui-hide">
                                                 <div class="layui-col-md6">
                                                     <input type="text" class="layui-input pointer"
                                                            id="form-filterItem-date-select-range-start"
@@ -257,18 +257,15 @@
                                                 </div>
                                             </div>
                                             <div id="form-filterItem-input-range-search-row"
-                                                 class="layui-row ">
-                                                <div class="layui-col-md5">
+                                                 class="layui-row row-inline layui-hide">
+                                                <div class="layui-col-md6">
                                                     <input type="number" name="word-start" placeholder="请输入范围开始值"
-                                                           autocomplete="off" class="layui-input"
+                                                           autocomplete="off" class="layui-input" min="0"
                                                            id="form-filterItem-input-range-start">
-                                                </div>
-                                                <div class="layui-col-md1">
-                                                    <div class="mid">-</div>
                                                 </div>
                                                 <div class="layui-col-md6">
                                                     <input type="number" name="word-end" placeholder="请输入范围结束值"
-                                                           autocomplete="off" class="layui-input"
+                                                           autocomplete="off" class="layui-input" min="0"
                                                            id="form-filterItem-input-range-end">
                                                 </div>
                                             </div>

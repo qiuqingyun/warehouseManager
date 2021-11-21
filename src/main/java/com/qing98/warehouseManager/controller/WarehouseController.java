@@ -62,7 +62,7 @@ public class WarehouseController {
     @GetMapping(path = "/owner/get/all")
     public ResponseEntity<String> getAllOwner(@RequestParam int page, @RequestParam int limit) {
         page -= 1;
-        Pageable pageable = PageRequest.of(page, limit);
+        Pageable pageable = PageRequest.of(page, limit,Sort.by(Sort.Direction.DESC, "dateRegistration"));
         List<Owner> resultList = ownerRepository.findAll(pageable).toList();
         //提取所有者ID，名称信息
         List<OwnersTableItem> ownersTableItems = new ArrayList<>();
@@ -246,6 +246,7 @@ public class WarehouseController {
                     }
                 } catch (IllegalArgumentException e) {
                     //编号格式错误
+                    logger.warn("Parse UUID[uuid] failed: " + word);
                     resultList = new ArrayList<>();
                 }
                 break;
@@ -285,6 +286,7 @@ public class WarehouseController {
                     }
                 } catch (NumberFormatException e) {
                     //编号格式错误
+                    logger.warn("Parse Long[ownerId] failed: " + word);
                     resultList = new ArrayList<>();
                 }
                 break;
@@ -296,6 +298,7 @@ public class WarehouseController {
                     resultList = itemRepository.findAllByDateRecord(dateTime, pageable);
                     total = itemRepository.countAllByDateRecord(dateTime);
                 } catch (DateTimeParseException e) {
+                    logger.warn("Parse DateTime[dateRecord] failed: " + word);
                     resultList = new ArrayList<>();
                 }
                 break;
@@ -308,6 +311,7 @@ public class WarehouseController {
                     resultList = itemRepository.findAllByDateRecordBetween(dateTimeStart, dateTimeEnd, pageable);
                     total = itemRepository.countAllByDateRecordBetween(dateTimeStart, dateTimeEnd);
                 } catch (DateTimeParseException e) {
+                    logger.warn("Parse DateTime[dateRecord] failed: " + word + ", " + word2);
                     resultList = new ArrayList<>();
                 }
                 break;
@@ -320,6 +324,7 @@ public class WarehouseController {
                     resultList = itemRepository.findAllByDateInto(dateTime, pageableTemp);
                     total = itemRepository.countAllByDateInto(dateTime);
                 } catch (DateTimeParseException e) {
+                    logger.warn("Parse DateTime[dateInto] failed: " + word);
                     resultList = new ArrayList<>();
                 }
                 break;
@@ -333,6 +338,7 @@ public class WarehouseController {
                     resultList = itemRepository.findAllByDateIntoBetween(dateTimeStart, dateTimeEnd, pageableTemp);
                     total = itemRepository.countAllByDateIntoBetween(dateTimeStart, dateTimeEnd);
                 } catch (DateTimeParseException e) {
+                    logger.warn("Parse DateTime[dateInto] failed: " + word + ", " + word2);
                     resultList = new ArrayList<>();
                 }
                 break;
@@ -345,6 +351,7 @@ public class WarehouseController {
                     resultList = itemRepository.findAllByDateLeave(dateTime, pageableTemp);
                     total = itemRepository.countAllByDateLeave(dateTime);
                 } catch (DateTimeParseException e) {
+                    logger.warn("Parse DateTime[dateLeave] failed: " + word);
                     resultList = new ArrayList<>();
                 }
                 break;
@@ -358,6 +365,7 @@ public class WarehouseController {
                     resultList = itemRepository.findAllByDateLeaveBetween(dateTimeStart, dateTimeEnd, pageableTemp);
                     total = itemRepository.countAllByDateLeaveBetween(dateTimeStart, dateTimeEnd);
                 } catch (DateTimeParseException e) {
+                    logger.warn("Parse DateTime[dateLeave] failed: " + word + ", " + word2);
                     resultList = new ArrayList<>();
                 }
                 break;
@@ -375,6 +383,7 @@ public class WarehouseController {
                     resultList = itemRepository.findAllByLength(length, pageable);
                     total = itemRepository.countAllByLength(length);
                 } catch (NumberFormatException e) {
+                    logger.warn("Parse Float[length] failed: " + word);
                     resultList = new ArrayList<>();
                 }
                 break;
@@ -387,6 +396,7 @@ public class WarehouseController {
                     resultList = itemRepository.findAllByLengthBetween(rangeStart, rangeEnd, pageable);
                     total = itemRepository.countAllByLengthBetween(rangeStart, rangeEnd);
                 } catch (NumberFormatException e) {
+                    logger.warn("Parse Float[length] failed: " + word + ", " + word2);
                     resultList = new ArrayList<>();
                 }
                 break;
@@ -399,6 +409,7 @@ public class WarehouseController {
                     resultList = itemRepository.findAllByWidth(width, pageableTemp);
                     total = itemRepository.countAllByWidth(width);
                 } catch (NumberFormatException e) {
+                    logger.warn("Parse Float[width] failed: " + word);
                     resultList = new ArrayList<>();
                 }
                 break;
@@ -411,6 +422,7 @@ public class WarehouseController {
                     resultList = itemRepository.findAllByWidthBetween(rangeStart, rangeEnd, pageable);
                     total = itemRepository.countAllByWidthBetween(rangeStart, rangeEnd);
                 } catch (NumberFormatException e) {
+                    logger.warn("Parse Float[width] failed: " + word + ", " + word2);
                     resultList = new ArrayList<>();
                 }
                 break;
@@ -423,6 +435,7 @@ public class WarehouseController {
                     resultList = itemRepository.findAllByHeight(height, pageableTemp);
                     total = itemRepository.countAllByHeight(height);
                 } catch (NumberFormatException e) {
+                    logger.warn("Parse Float[height] failed: " + word);
                     resultList = new ArrayList<>();
                 }
                 break;
@@ -435,6 +448,7 @@ public class WarehouseController {
                     resultList = itemRepository.findAllByHeightBetween(rangeStart, rangeEnd, pageable);
                     total = itemRepository.countAllByHeightBetween(rangeStart, rangeEnd);
                 } catch (NumberFormatException e) {
+                    logger.warn("Parse Float[height] failed: " + word + ", " + word2);
                     resultList = new ArrayList<>();
                 }
                 break;

@@ -39,24 +39,43 @@ li.layui-nav-item a {
     padding: 3px 5px;
 }
 
-#form-filterItem-input, #form-filterItem-input-range-end {
+#form-filterItem-input, #form-filterItem-input-range-end, #form-filterItem-date-select-range-end {
     padding-right: 54px;
 }
 
-/*#form-filterItem-input-range-start {*/
-/*    border-right: none;*/
-/*    padding-right: 54px;*/
-/*}*/
+#form-filterItem-input-range-start, #form-filterItem-date-select-range-start {
+    border: none;
+    padding-right: 54px;
+}
 
-/*#form-filterItem-input-range-end {*/
-/*    border-left: none;*/
-/*}*/
+#form-filterItem-input-range-end, #form-filterItem-date-select-range-end {
+    border: none;
+}
+
+#form-filterItem-input-range-start, #form-filterItem-input-range-end, #form-filterItem-date-select-range-start, #form-filterItem-date-select-range-end {
+    height: 36px;
+}
+
+.row-inline {
+    height: 38px;
+    border: #eee 1px solid;
+    border-radius: 0 2px 2px 0;
+    box-sizing: border-box;
+}
+
 fieldset.layui-elem-field.layui-field-title {
     margin-top: 30px;
 }
-.mid {
-    text-align: center;
-    font-size: 20px;
-    line-height: 32px;
-    color: #979797;
+button.layui-btn.layui-btn-fluid.button-create-new-owner {
+    margin: 15px 0 5px 0;
+}
+form#form-owner-create {
+    padding: 15px 20px 15px 15px;
+}
+#form-owner-create label.layui-form-label {
+    width: 30px;
+    padding-left: 5px;
+}
+#form-owner-create .layui-input-block {
+    margin-left: 50px;
 }

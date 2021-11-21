@@ -54,11 +54,11 @@
             <div class="layui-tab layui-tab-brief">
                 <!-- 标签 -->
                 <ul class="layui-tab-title">
-                    <li class="layui-this"><a href="javascript:" onclick="" id="button-form-addItem">登记物品</a></li>
+                    <li class="layui-this"><a href="javascript:" id="button-form-addItem">登记物品</a></li>
                     <li><a href="javascript:" onclick="renderTable('order')" id="button-order">订购中的</a></li>
                     <li><a href="javascript:" onclick="renderTable('keep')" id="button-keep">库存中的</a></li>
                     <li><a href="javascript:" onclick="renderTable('export')" id="button-export">已出库的</a></li>
-                    <li><a href="javascript:" onclick="renderTableFilter()" id="button-filter">筛选物品</a></li>
+                    <li><a href="javascript:" id="button-filter">筛选物品</a></li>
                 </ul>
                 <!-- 标签内容 -->
                 <div class="layui-tab-content">
@@ -173,8 +173,10 @@
                                 </div>
                                 <!-- 提交表单 -->
                                 <div class="layui-form-item">
-                                    <button class="layui-btn" lay-submit lay-filter="form-item-submit">立即提交</button>
-                                    <button type="reset" class="layui-btn layui-btn-primary" id="form-item-reset">重置</button>
+                                    <button class="layui-btn" lay-submit lay-filter="form-addItem-submit">立即提交</button>
+                                    <button type="reset" class="layui-btn layui-btn-primary" id="form-addItem-reset">
+                                        重置
+                                    </button>
                                 </div>
                             </form>
                         </div>
@@ -200,6 +202,91 @@
                     <!-- 筛选物品 -->
                     <div class="layui-tab-item">
                         <div class="content-container">
+                            <form class="layui-form layui-form-pane" id="form-filterItem"
+                                  style="margin: 8px auto auto;width: 800px;">
+                                <div class="layui-form-item">
+                                    <div class="layui-row" id="form-filterItem-search-row">
+                                        <div class="layui-col-md4">
+                                            <label class="layui-form-label">筛选条件</label>
+                                            <div class="layui-input-block">
+                                                <select name="condition">
+                                                    <option value="all">查看所有</option>
+                                                    <option value="name">物品名称</option>
+                                                    <option value="uuid">物品编号</option>
+                                                    <option value="owner">所有者</option>
+                                                    <option value="ownerId">所有者编号</option>
+                                                    <option value="dateRecord">登记时间</option>
+                                                    <option value="dateInto">入库时间</option>
+                                                    <option value="dateLeave">出库时间</option>
+                                                    <option value="description">物品描述</option>
+                                                    <option value="length">物品长度</option>
+                                                    <option value="width">物品宽度</option>
+                                                    <option value="height">物品高度</option>
+                                                    <option value="architecture">物品架构</option>
+                                                    <optgroup label="范围检索">
+                                                        <option value="dateRecordRange">登记时间</option>
+                                                        <option value="dateIntoRange">入库时间</option>
+                                                        <option value="dateLeaveRange">出库时间</option>
+                                                        <option value="lengthRange">物品长度</option>
+                                                        <option value="widthRange">物品宽度</option>
+                                                        <option value="heightRange">物品高度</option>
+                                                    </optgroup>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="layui-col-md8">
+                                            <input id="form-filterItem-input" name="word"
+                                                   class="layui-input layui-hide" type="text"
+                                                   placeholder="请输入筛选内容" autocomplete="off">
+                                            <input id="form-filterItem-date-select" name="word-date"
+                                                   class="layui-input pointer layui-hide" type="text"
+                                                   placeholder="点击选择时间" autocomplete="off" readonly>
+                                            <div id="form-filterItem-date-select-range-search-row"
+                                                 class="layui-row layui-hide">
+                                                <div class="layui-col-md6">
+                                                    <input type="text" class="layui-input pointer"
+                                                           id="form-filterItem-date-select-range-start"
+                                                           name="word-date-start" placeholder="点击选择开始时间"
+                                                           autocomplete="off" readonly>
+                                                </div>
+                                                <div class="layui-col-md6">
+                                                    <input type="text" class="layui-input pointer"
+                                                           id="form-filterItem-date-select-range-end"
+                                                           name="word-date-end" placeholder="点击选择结束时间"
+                                                           autocomplete="off" readonly>
+                                                </div>
+                                            </div>
+                                            <div id="form-filterItem-input-range-search-row"
+                                                 class="layui-row ">
+                                                <div class="layui-col-md5">
+                                                    <input type="number" name="word-start" placeholder="请输入范围开始值"
+                                                           autocomplete="off" class="layui-input"
+                                                           id="form-filterItem-input-range-start">
+                                                </div>
+                                                <div class="layui-col-md1">
+                                                    <div class="mid">-</div>
+                                                </div>
+                                                <div class="layui-col-md6">
+                                                    <input type="number" name="word-end" placeholder="请输入范围结束值"
+                                                           autocomplete="off" class="layui-input"
+                                                           id="form-filterItem-input-range-end">
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <button class="layui-btn" lay-submit lay-filter="form-filterItem-submit"
+                                                id="form-filterItem-submit">
+                                            <svg t="1637309387707" class="icon" viewBox="0 0 1024 1024" version="1.1"
+                                                 xmlns="http://www.w3.org/2000/svg" p-id="2902" width="32" height="32">
+                                                <path d="M192 448c0-141.152 114.848-256 256-256s256 114.848 256 256-114.848 256-256 256-256-114.848-256-256z m710.624 409.376l-206.88-206.88A318.784 318.784 0 0 0 768 448c0-176.736-143.264-320-320-320S128 271.264 128 448s143.264 320 320 320a318.784 318.784 0 0 0 202.496-72.256l206.88 206.88 45.248-45.248z"
+                                                      fill="#ffffff" p-id="2903"></path>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                            <fieldset class="layui-elem-field layui-field-title">
+                                <legend>筛选条件 - <span id="filter-criteria-show">查看所有</span></legend>
+                            </fieldset>
                             <table id="table-filter" lay-filter="table-filter"></table>
                         </div>
                     </div>

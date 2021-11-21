@@ -189,6 +189,10 @@ public class Item {
         return dateRecord.format(Config.FORMATTER);
     }
 
+    public LocalDateTime compare() {
+        return dateRecord;
+    }
+
     @PrePersist
     public void setDateRecord() {
         this.dateRecord = LocalDateTime.now();

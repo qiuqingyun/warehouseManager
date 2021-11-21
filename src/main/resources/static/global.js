@@ -2,27 +2,50 @@ const itemInfoKeys = ["name", "uuid", "status", "ownerId", "dateRecord", "dateIn
 const itemInfoNames = ["物品名称", "物品编号", "物品状态", "所有者", "登记时间", "入库时间", "出库时间", "物品描述", "尺寸：长", "尺寸：宽", "尺寸：高", "物品架构"];
 const itemInfoButtons = [[['物品入库', '添加所有者', '返回'], ['物品入库', '返回']], [['物品出库', '添加所有者', '返回'], ['物品出库', '返回']], [['返回'], ['返回']]];
 const itemMoveConfirms = ['确定将物品入库？', '确定将物品出库？', '错误'];
+const conditionName = {
+    "all": "查看所有",
+    "name": "物品名称",
+    "uuid": "物品编号",
+    "owner": "所有者",
+    "ownerId": "所有者编号",
+    "dateRecord": "登记时间",
+    "dateRecordRange": "登记时间(范围)",
+    "dateInto": "入库时间",
+    "dateIntoRange": "入库时间(范围)",
+    "dateLeave": "出库时间",
+    "dateLeaveRange": "出库时间(范围)",
+    "description": "物品描述",
+    "length": "物品长度",
+    "lengthRange": "物品长度(范围)",
+    "width": "物品宽度",
+    "widthRange": "物品宽度(范围)",
+    "height": "物品高度",
+    "heightRange": "物品高度(范围)",
+    "architecture": "物品架构"
+};
 let tabShowNow = "page-data"
 let ownerChosen = '';
 window.onload = function () {
-    //渲染订购中的物品表格
-    // renderTable('order');
+    renderTableFilter();
     renderFormAddItem();
-}
-
-//渲染登记新物品表单
-function renderFormAddItem() {
     let form = layui.form;
-    //渲染时间选择控件
-    let inputs = ['#dateInto', '#dateLeave'];
-    for (let i = 0; i < 2; i++) {
-        layui.laydate.render({
-            elem: inputs[i]
-            , type: 'datetime'
-            , max: '23:59:59'
+    form.on('submit(form-addItem-submit)', function (submit) {
+        submitItem(submit).then(() => {
+            layui.layer.msg('提交成功', {icon: 1});
+            document.getElementById('form-addItem-reset').click();
+            document.getElementById('date-container').classList.add('layui-hide');
+            document.getElementById('dateInto-container').classList.add('layui-hide');
+            document.getElementById('dateLeave-container').classList.add('layui-hide');
         });
-    }
-    //注册状态单选框监听
+        return false;
+    });
+    form.on('submit(form-filterItem-submit)', function (submit) {
+        let data = submit.field;
+        console.log(conditionName[data.condition])
+        renderTableFilter(data.condition, data.word, data.word1);
+        document.getElementById('filter-criteria-show').innerText = conditionName[data.condition];
+        return false;
+    });
     form.on('radio(status-radio)', function (data) {
         switch (data.value) {
             case 'order': {//使入库时间和出库时间不可用
@@ -48,9 +71,11 @@ function renderFormAddItem() {
             }
         }
     });
+    //todo 监听筛选条件选择框，在特定的时候弹出两个框
+
     form.verify({
         dateIntoVerify: function (value, item) { //value：表单的值、item：表单的DOM对象
-            if (!document.getElementById('dateInto').classList.contains('layui-hide')) {
+            if (!document.getElementById('date-container').classList.contains('layui-hide')) {
                 let dateInto = Date.parse(document.getElementById('dateInto').value);
                 if (isNaN(dateInto)) {
                     return '入库时间不能为空';
@@ -83,18 +108,22 @@ function renderFormAddItem() {
             }
         }
     });
-    form.on('submit(form-item-submit)', function (submit) {
-        submitItem(submit).then(() => {
-            layui.layer.msg('提交成功', {icon: 1});
-            document.getElementById('form-item-reset').click();
-            document.getElementById('date-container').classList.add('layui-hide');
-            document.getElementById('dateInto-container').classList.add('layui-hide');
-            document.getElementById('dateLeave-container').classList.add('layui-hide');
-        });
-        return false;
-    });
 }
 
+//渲染登记新物品表单
+function renderFormAddItem() {
+    //渲染时间选择控件
+    let inputs = ['#dateInto', '#dateLeave'];
+    for (let i = 0; i < 2; i++) {
+        layui.laydate.render({
+            elem: inputs[i]
+            , type: 'datetime'
+            , max: '23:59:59'
+        });
+    }
+}
+
+//提交新物品
 async function submitItem(submit) {
     let data = submit.field;
     data.ownerId = ownerChosen;
@@ -112,11 +141,6 @@ async function submitItem(submit) {
         data.architecture = 'x86';
     }
     await postData('/item/add', data);
-}
-
-//渲染筛选物品表格
-function renderTableFilter() {
-
 }
 
 //渲染物品表格
@@ -162,6 +186,38 @@ function renderTable(status) {
             }
         });
         table.on('row(table-' + status + ')', function (obj) {
+            itemInfoShow(obj.data.uuid);
+        });
+    });
+}
+
+//渲染筛选物品表格
+function renderTableFilter(condition, word, word1) {
+    layui.use('table', function () {
+        let table = layui.table;
+        let url = '/item/get/condition/';
+        if (condition === undefined || condition === 'all') {
+            condition = 'all';
+            url = '/item/get/all/';
+        }
+        table.render({
+            elem: '#table-filter'
+            , url: url //数据接口
+            , where: {'condition': condition, 'word': word, 'word1': word1}
+            , page: true //开启分页
+            , loading: true
+            , cols: [[//已出库的表头
+                {field: 'name', title: '物品名称', fixed: 'left', unresize: true, minWidth: 200}
+                , {field: 'uuid', title: '物品编号', width: 300, unresize: true, hide: true}
+                , {field: 'dateRecord', title: '登记日期', width: 180, sort: true, unresize: true}
+                , {field: 'dateInto', title: '入库日期', width: 180, sort: true, unresize: true}
+                , {field: 'dateLeave', title: '出库日期', width: 180, sort: true, unresize: true}
+            ]]
+            , done: function (res, curr, count) {
+                $('td').css({'cursor': 'pointer'}); //设置成指针放在表格上换成手指
+            }
+        });
+        table.on('row(table-filter)', function (obj) {
             itemInfoShow(obj.data.uuid);
         });
     });

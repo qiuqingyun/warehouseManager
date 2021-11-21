@@ -2,6 +2,7 @@ package com.qing98.warehouseManager.controller;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.qing98.warehouseManager.Config;
 import com.qing98.warehouseManager.entity.Item;
 import com.qing98.warehouseManager.entity.Owner;
 import com.qing98.warehouseManager.repository.ItemRepository;
@@ -16,6 +17,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.*;
 
 /**
@@ -157,13 +160,19 @@ public class WarehouseController {
     }
 
     /**
-     * 获取所有的物品元数据
+     * 根据物品uuid获取其元数据
      *
-     * @return 物品元数据数组
+     * @param uuid 物品uuid
+     * @return 物品元数据
      */
-    @GetMapping(path = "/item/get/all")
-    public ResponseEntity<String> getAllItem() {
-        return new Response().success(itemRepository.findAll(Sort.by(Sort.Direction.DESC, "dateRecord")));
+    @GetMapping(path = "/item/get")
+    public ResponseEntity<String> getItemByUuid(@RequestParam String uuid) {
+        Optional<Item> itemMetadata = itemRepository.findById(UUID.fromString(uuid));
+        if (itemMetadata.isPresent()) {
+            return new Response().success(itemMetadata.get());
+        } else {
+            return new Response().notFound();
+        }
     }
 
     /**
@@ -175,7 +184,8 @@ public class WarehouseController {
      * @return 物品元数据数组
      */
     @GetMapping(path = "/item/get/status")
-    public ResponseEntity<String> getItemByStatus(@RequestParam String status, @RequestParam int page, @RequestParam int limit) {
+    public ResponseEntity<String> getItemByStatus(@RequestParam int page, @RequestParam int limit,
+                                                  @RequestParam String status) {
         page -= 1;
         Sort sort;
         Item.Status itemStatus = Item.Status.valueOf(status);
@@ -198,20 +208,277 @@ public class WarehouseController {
     }
 
     /**
-     * 根据物品uuid获取其元数据
-     *
-     * @param uuid 物品uuid
-     * @return 物品元数据
+     * @param page
+     * @param limit
+     * @param word
+     * @param word2
+     * @param condition
+     * @return
      */
-    @GetMapping(path = "/item/get")
-    public ResponseEntity<String> getItemByUuid(@RequestParam String uuid) {
-        Optional<Item> itemMetadata = itemRepository.findById(UUID.fromString(uuid));
-        if (itemMetadata.isPresent()) {
-            return new Response().success(itemMetadata.get());
-        } else {
-            return new Response().notFound();
+    @GetMapping(path = "/item/get/condition")
+    public ResponseEntity<String> getItemByCondition(@RequestParam int page, @RequestParam int limit,
+                                                     @RequestParam String word, @RequestParam(defaultValue = "") String word2,
+                                                     @RequestParam String condition) {
+        page -= 1;
+        List<Item> resultList;
+        long total = 0;
+        Pageable pageable = PageRequest.of(page, limit, Sort.by(Sort.Direction.DESC, "dateRecord"));
+        switch (condition) {
+            //根据物品名称查找
+            case "name": {
+                //查询
+                resultList = itemRepository.findAllByNameContaining(word, pageable);
+                //计数
+                total = itemRepository.countAllByNameContaining(word);
+                break;
+            }
+            //根据物品编号查找
+            case "uuid": {
+                try {
+                    UUID uuid = UUID.fromString(word);
+                    //查询
+                    Optional<Item> item = itemRepository.findById(uuid);
+                    resultList = new ArrayList<>(1);
+                    if (item.isPresent()) {
+                        resultList.add(item.get());
+                        //计数
+                        total = 1;
+                    }
+                } catch (IllegalArgumentException e) {
+                    //编号格式错误
+                    resultList = new ArrayList<>();
+                }
+                break;
+            }
+            //根据物品所有者名称查找
+            case "owner": {
+                //查询对应的所有者
+                List<Owner> owners = ownerRepository.findAllByNameContaining(word);
+                List<Item> totalList = new ArrayList<>();
+                for (Owner owner : owners) {
+                    long ownerId = owner.getId();
+                    totalList.addAll(itemRepository.findAllByOwnerId(ownerId));
+                }
+                //排序
+                totalList.sort(Comparator.comparing(Item::compare));
+                //分页
+                int pageStart = Math.min(page * limit, totalList.size());
+                int pageEnd = Math.min((page + 1) * limit, totalList.size());
+                resultList = new ArrayList<>(totalList.subList(pageStart, pageEnd));
+                //计数
+                total = totalList.size();
+                break;
+            }
+            //根据物品所有者编号查找
+            case "ownerId": {
+                try {
+                    //查询对应的所有者
+                    Long ownerId = Long.parseLong(word);
+                    Optional<Owner> owner = ownerRepository.findById(ownerId);
+                    if (owner.isPresent()) {
+                        //当所有者存在时
+                        resultList = itemRepository.findAllByOwnerId(ownerId, pageable);
+                        //计数
+                        total = itemRepository.countAllByOwnerId(ownerId);
+                    } else {
+                        resultList = new ArrayList<>();
+                    }
+                } catch (NumberFormatException e) {
+                    //编号格式错误
+                    resultList = new ArrayList<>();
+                }
+                break;
+            }
+            //根据物品登记时间查找
+            case "dateRecord": {
+                try {
+                    LocalDateTime dateTime = LocalDateTime.parse(word, Config.FORMATTER);
+                    resultList = itemRepository.findAllByDateRecord(dateTime, pageable);
+                    total = itemRepository.countAllByDateRecord(dateTime);
+                } catch (DateTimeParseException e) {
+                    resultList = new ArrayList<>();
+                }
+                break;
+            }
+            //根据物品登记时间范围查找
+            case "dateRecordRange": {
+                try {
+                    LocalDateTime dateTimeStart = LocalDateTime.parse(word, Config.FORMATTER);
+                    LocalDateTime dateTimeEnd = LocalDateTime.parse(word2, Config.FORMATTER);
+                    resultList = itemRepository.findAllByDateRecordBetween(dateTimeStart, dateTimeEnd, pageable);
+                    total = itemRepository.countAllByDateRecordBetween(dateTimeStart, dateTimeEnd);
+                } catch (DateTimeParseException e) {
+                    resultList = new ArrayList<>();
+                }
+                break;
+            }
+            //根据物品入库时间查找
+            case "dateInto": {
+                try {
+                    LocalDateTime dateTime = LocalDateTime.parse(word, Config.FORMATTER);
+                    Pageable pageableTemp = PageRequest.of(page, limit, Sort.by(Sort.Direction.DESC, "dateInto"));
+                    resultList = itemRepository.findAllByDateInto(dateTime, pageableTemp);
+                    total = itemRepository.countAllByDateInto(dateTime);
+                } catch (DateTimeParseException e) {
+                    resultList = new ArrayList<>();
+                }
+                break;
+            }
+            //根据物品入库时间范围查找
+            case "dateIntoRange": {
+                try {
+                    LocalDateTime dateTimeStart = LocalDateTime.parse(word, Config.FORMATTER);
+                    LocalDateTime dateTimeEnd = LocalDateTime.parse(word2, Config.FORMATTER);
+                    Pageable pageableTemp = PageRequest.of(page, limit, Sort.by(Sort.Direction.DESC, "dateInto"));
+                    resultList = itemRepository.findAllByDateIntoBetween(dateTimeStart, dateTimeEnd, pageableTemp);
+                    total = itemRepository.countAllByDateIntoBetween(dateTimeStart, dateTimeEnd);
+                } catch (DateTimeParseException e) {
+                    resultList = new ArrayList<>();
+                }
+                break;
+            }
+            //根据物品出库时间查找
+            case "dateLeave": {
+                try {
+                    LocalDateTime dateTime = LocalDateTime.parse(word, Config.FORMATTER);
+                    Pageable pageableTemp = PageRequest.of(page, limit, Sort.by(Sort.Direction.DESC, "dateLeave"));
+                    resultList = itemRepository.findAllByDateLeave(dateTime, pageableTemp);
+                    total = itemRepository.countAllByDateLeave(dateTime);
+                } catch (DateTimeParseException e) {
+                    resultList = new ArrayList<>();
+                }
+                break;
+            }
+            //根据物品出库时间范围查找
+            case "dateLeaveRange": {
+                try {
+                    LocalDateTime dateTimeStart = LocalDateTime.parse(word, Config.FORMATTER);
+                    LocalDateTime dateTimeEnd = LocalDateTime.parse(word2, Config.FORMATTER);
+                    Pageable pageableTemp = PageRequest.of(page, limit, Sort.by(Sort.Direction.DESC, "dateLeave"));
+                    resultList = itemRepository.findAllByDateLeaveBetween(dateTimeStart, dateTimeEnd, pageableTemp);
+                    total = itemRepository.countAllByDateLeaveBetween(dateTimeStart, dateTimeEnd);
+                } catch (DateTimeParseException e) {
+                    resultList = new ArrayList<>();
+                }
+                break;
+            }
+            //根据物品描述查找
+            case "description": {
+                resultList = itemRepository.findAllByDescriptionContaining(word, pageable);
+                total = itemRepository.countAllByDescriptionContaining(word);
+                break;
+            }
+            //根据物品尺寸之长查找
+            case "length": {
+                try {
+                    Float length = Float.valueOf(word);
+                    resultList = itemRepository.findAllByLength(length, pageable);
+                    total = itemRepository.countAllByLength(length);
+                } catch (NumberFormatException e) {
+                    resultList = new ArrayList<>();
+                }
+                break;
+            }
+            //根据物品尺寸之长的范围查找
+            case "lengthRange": {
+                try {
+                    Float rangeStart = Float.valueOf(word);
+                    Float rangeEnd = Float.valueOf(word2);
+                    resultList = itemRepository.findAllByLengthBetween(rangeStart, rangeEnd, pageable);
+                    total = itemRepository.countAllByLengthBetween(rangeStart, rangeEnd);
+                } catch (NumberFormatException e) {
+                    resultList = new ArrayList<>();
+                }
+                break;
+            }
+            //根据物品尺寸之宽查找
+            case "width": {
+                try {
+                    Float width = Float.valueOf(word);
+                    Pageable pageableTemp = PageRequest.of(page, limit, Sort.by(Sort.Direction.DESC, "dateInto"));
+                    resultList = itemRepository.findAllByWidth(width, pageableTemp);
+                    total = itemRepository.countAllByWidth(width);
+                } catch (NumberFormatException e) {
+                    resultList = new ArrayList<>();
+                }
+                break;
+            }
+            //根据物品尺寸之宽的范围查找
+            case "widthRange": {
+                try {
+                    Float rangeStart = Float.valueOf(word);
+                    Float rangeEnd = Float.valueOf(word2);
+                    resultList = itemRepository.findAllByWidthBetween(rangeStart, rangeEnd, pageable);
+                    total = itemRepository.countAllByWidthBetween(rangeStart, rangeEnd);
+                } catch (NumberFormatException e) {
+                    resultList = new ArrayList<>();
+                }
+                break;
+            }
+            //根据物品尺寸之高查找
+            case "height": {
+                try {
+                    Float height = Float.valueOf(word);
+                    Pageable pageableTemp = PageRequest.of(page, limit, Sort.by(Sort.Direction.DESC, "dateLeave"));
+                    resultList = itemRepository.findAllByHeight(height, pageableTemp);
+                    total = itemRepository.countAllByHeight(height);
+                } catch (NumberFormatException e) {
+                    resultList = new ArrayList<>();
+                }
+                break;
+            }
+            //根据物品尺寸之高的范围查找
+            case "heightRange": {
+                try {
+                    Float rangeStart = Float.valueOf(word);
+                    Float rangeEnd = Float.valueOf(word2);
+                    resultList = itemRepository.findAllByHeightBetween(rangeStart, rangeEnd, pageable);
+                    total = itemRepository.countAllByHeightBetween(rangeStart, rangeEnd);
+                } catch (NumberFormatException e) {
+                    resultList = new ArrayList<>();
+                }
+                break;
+            }
+            //根据物品架构查找
+            case "architecture": {
+                resultList = itemRepository.findAllByArchitectureContaining(word, pageable);
+                total = itemRepository.countAllByArchitectureContaining(word);
+                break;
+            }
+
+            default: {
+                return new Response().badRequest();
+            }
         }
+        //提取物品UUID，名称以及日期等信息
+        List<ItemsTableItem> itemsTableItems = new ArrayList<>();
+        for (Item item : resultList) {
+            itemsTableItems.add(new ItemsTableItem(item));
+        }
+        ItemsTable itemsTable = new ItemsTable(itemsTableItems, total);
+        return new Response().success(itemsTable);
     }
+
+
+    /**
+     * 获取所有的物品元数据
+     *
+     * @return 物品元数据数组
+     */
+    @GetMapping(path = "/item/get/all")
+    public ResponseEntity<String> getAllItem(@RequestParam int page, @RequestParam int limit) {
+        page -= 1;
+        Pageable pageable = PageRequest.of(page, limit, Sort.by(Sort.Direction.DESC, "dateRecord"));
+        List<Item> items = itemRepository.findAll(pageable).toList();
+        //提取物品UUID，名称以及日期等信息
+        List<ItemsTableItem> itemsTableItems = new ArrayList<>();
+        for (Item item : items) {
+            itemsTableItems.add(new ItemsTableItem(item));
+        }
+        ItemsTable itemsTable = new ItemsTable(itemsTableItems, itemRepository.count());
+        return new Response().success(itemsTable);
+    }
+
 
     class Response {
         public ResponseEntity<String> success(Object object) {

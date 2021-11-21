@@ -2,22 +2,61 @@ li.layui-nav-item a {
     font-size: 16px;
     text-align: center;
 }
-.content-container{
+
+.content-container {
     padding: 15px;
 }
+
 .body-container .layui-tab-content {
     padding-top: 0;
 }
-.table-item-info,.table-owner-choose{
+
+.table-item-info, .table-owner-choose {
     padding: 0 15px;
 }
+
 .table-item-info td:first-child {
     text-align: center;
     width: 70px;
 }
-#form-addItem-container{
+
+#form-addItem-container {
     padding: 15px;
 }
-.pointer{
+
+.pointer {
     cursor: pointer;
+}
+
+#form-filterItem-search-row {
+    position: relative;
+}
+
+#form-filterItem-submit {
+    position: absolute;
+    top: 0;
+    right: 0;
+    padding: 3px 5px;
+}
+
+#form-filterItem-input, #form-filterItem-input-range-end {
+    padding-right: 54px;
+}
+
+/*#form-filterItem-input-range-start {*/
+/*    border-right: none;*/
+/*    padding-right: 54px;*/
+/*}*/
+
+/*#form-filterItem-input-range-end {*/
+/*    border-left: none;*/
+/*}*/
+fieldset.layui-elem-field.layui-field-title {
+    margin-top: 30px;
+}
+.mid {
+    text-align: center;
+    font-size: 20px;
+    line-height: 32px;
+    color: #979797;
 }

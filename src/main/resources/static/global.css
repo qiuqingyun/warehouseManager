@@ -28,22 +28,23 @@ li.layui-nav-item a {
     cursor: pointer;
 }
 
-#form-filterItem-search-row {
+#form-filterItem-search-row,#form-filterOwner-search-row {
     position: relative;
 }
 
-#form-filterItem-submit {
+#form-filterItem-submit,#form-filterOwner-submit {
     position: absolute;
     top: 0;
     right: 0;
     padding: 3px 5px;
 }
 
-#form-filterItem-input, #form-filterItem-input-range-end, #form-filterItem-date-select-range-end {
+#form-filterItem-input, #form-filterItem-input-range-end, #form-filterItem-date-select-range-end,
+#form-filterOwner-input, #form-filterOwner-input-range-end, #form-filterOwner-date-select-range-end {
     padding-right: 54px;
 }
 
-#form-filterItem-input-range-start, #form-filterItem-date-select-range-start {
+#form-filterItem-input-range-start, #form-filterItem-date-select-range-start,#form-filterOwner-input-range-start, #form-filterOwner-date-select-range-start {
     border: none;
     padding-right: 54px;
 }
@@ -52,7 +53,8 @@ li.layui-nav-item a {
     border: none;
 }
 
-#form-filterItem-input-range-start, #form-filterItem-input-range-end, #form-filterItem-date-select-range-start, #form-filterItem-date-select-range-end {
+#form-filterItem-input-range-start, #form-filterItem-input-range-end, #form-filterItem-date-select-range-start, #form-filterItem-date-select-range-end,
+#form-filterOwner-input-range-start, #form-filterOwner-input-range-end, #form-filterOwner-date-select-range-start, #form-filterOwner-date-select-range-end{
     height: 36px;
 }
 
@@ -97,11 +99,23 @@ form#form-owner-create {
     font-size: 30px;
     padding-top: 20px;
 }
-.chart-container{
+
+.chartLine-container {
     margin-top: 20px;
+    min-width: 900px;
 }
-#chart {
-    width: 800px;
+
+.chartPie-container {
+    margin-top: 20px;
+    min-width: 500px;
+}
+#chartLine, #chartPie {
     height: 400px;
-    margin:40px auto 0 auto;
+    margin: 40px auto 0 auto;
+}
+#chartLine {
+    width: 800px;
+}
+#chartPie {
+    width: 400px;
 }

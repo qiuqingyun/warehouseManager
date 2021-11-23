@@ -4,7 +4,7 @@ const itemInfoButtons = [[['物品入库', '添加所有者', '返回'], ['物�
 const itemMoveConfirms = ['确定将物品入库？', '确定将物品出库？', '错误'];
 const ownerInfoKeys = ["name", "id", "phoneNumber", "dateRegistration", "note"];
 const ownerInfoNames = ["名称", "编号", "电话号码", "注册时间", "备注"];
-const conditionName = {
+const itemConditionName = {
     "all": "查看所有",
     "name": "物品名称",
     "uuid": "物品编号",
@@ -25,14 +25,26 @@ const conditionName = {
     "heightRange": "物品高度(范围)",
     "architecture": "物品架构"
 };
+const ownerConditionName={
+    "all": "查看所有",
+    "name": "名称",
+    "id": "编号",
+    "phoneNumber": "电话号码",
+    "note": "备注",
+    "dateRegistration": "登记时间",
+    "dateRegistrationRange": "登记时间(范围)",
+};
 let tabShowNow = "page-overview"
 let ownerChosen = '';
 let createOwnerFlag = false;
-let myChart;
+let chartLine;
+let chartPie;
 window.onload = function () {
-    renderTableFilter();
+    renderTableFilterItem();
+    renderTableFilterOwner();
     //渲染时间选择控件
-    let inputs = ['#dateInto', '#dateLeave', '#form-filterItem-date-select', '#form-filterItem-date-select-range-start', '#form-filterItem-date-select-range-end'];
+    let inputs = ['#dateInto', '#dateLeave', '#form-filterItem-date-select', '#form-filterItem-date-select-range-start', '#form-filterItem-date-select-range-end'
+        , '#form-filterOwner-date-select', '#form-filterOwner-date-select-range-start', '#form-filterOwner-date-select-range-end'];
     for (let i = 0; i < inputs.length; i++) {
         layui.laydate.render({
             elem: inputs[i]
@@ -54,7 +66,7 @@ window.onload = function () {
     });
     form.on('submit(form-filterItem-submit)', function (submit) {
         let data = submit.field;
-        document.getElementById('filter-criteria-show').innerText = conditionName[data.condition];
+        document.getElementById('filter-condition-show').innerText = itemConditionName[data.condition];
         let word;
         let word2 = '';
         switch (data.condition) {
@@ -83,7 +95,30 @@ window.onload = function () {
                 break;
             }
         }
-        renderTableFilter(data.condition, word, word2);
+        renderTableFilterItem(data.condition, word, word2);
+        return false;
+    });
+    form.on('submit(form-filterOwner-submit)', function (submit) {
+        let data = submit.field;
+        document.getElementById('filter-condition-show').innerText = ownerConditionName[data.condition];
+        let word;
+        let word2 = '';
+        switch (data.condition) {
+            case 'dateRegistration': {
+                word = data['word-date'];
+                break;
+            }
+            case 'dateRegistrationRange': {
+                word = data['word-date-start'];
+                word2 = data['word-date-end'];
+                break;
+            }
+            default: {
+                word = data.word;
+                break;
+            }
+        }
+        renderTableFilterOwner(data.condition, word, word2);
         return false;
     });
     form.on('submit(form-owner-create-submit)', function (data) {
@@ -161,6 +196,28 @@ window.onload = function () {
             }
         }
     });
+    form.on('select(form-filterOwner-select)', function (data) {
+        switch (data.value) {
+            case 'dateRegistration': {
+                document.getElementById('form-filterOwner-input').classList.add('layui-hide');
+                document.getElementById('form-filterOwner-date-select').classList.remove('layui-hide');
+                document.getElementById('form-filterOwner-date-select-range-search-row').classList.add('layui-hide');
+                break;
+            }
+            case 'dateRegistrationRange': {
+                document.getElementById('form-filterOwner-input').classList.add('layui-hide');
+                document.getElementById('form-filterOwner-date-select').classList.add('layui-hide');
+                document.getElementById('form-filterOwner-date-select-range-search-row').classList.remove('layui-hide');
+                break;
+            }
+            default: {
+                document.getElementById('form-filterOwner-input').classList.remove('layui-hide');
+                document.getElementById('form-filterOwner-date-select').classList.add('layui-hide');
+                document.getElementById('form-filterOwner-date-select-range-search-row').classList.add('layui-hide');
+                break;
+            }
+        }
+    });
     form.verify({
         dateIntoVerify: function (value, item) { //value：表单的值、item：表单的DOM对象
             if (!document.getElementById('date-container').classList.contains('layui-hide')) {
@@ -196,7 +253,8 @@ window.onload = function () {
             }
         }
     });
-    myChart = echarts.init(document.getElementById('chart'));
+    chartLine = echarts.init(document.getElementById('chartLine'));
+    chartPie = echarts.init(document.getElementById('chartPie'));
     getQuantity();
     setInterval(getQuantity, 5000);
 }
@@ -224,41 +282,98 @@ async function submitItem(submit) {
 }
 
 async function getQuantity() {
-    let data = JSON.parse(await getData('/item/get/quantity?limit=48'));
-    console.log(data);
-    let last=data.order.length-1;
-    document.getElementById('overview-count-all').innerText = data.order[last] + data.keep[last] + data.export[last];
-    document.getElementById('overview-count-order').innerText = data.order[last];
-    document.getElementById('overview-count-keep').innerText = data.keep[last];
-    document.getElementById('overview-count-export').innerText = data.export[last];
-    let chartOption = {
-        tooltip: {},
-        xAxis: {
-            data: data.dateTime
+    let data = JSON.parse(await getData('/item/get/quantity?limit=30'));
+    // console.log(data);
+    let last = data.orders.length - 1;
+    document.getElementById('overview-count-all').innerText = data.orders[last] + data.keeps[last] + data.exports[last];
+    document.getElementById('overview-count-order').innerText = data.orders[last];
+    document.getElementById('overview-count-keep').innerText = data.keeps[last];
+    document.getElementById('overview-count-export').innerText = data.exports[last];
+    let chartLineOption = {
+        tooltip: {
+            trigger: 'axis',
+            formatter: function (params) {
+                let orders = params[0].data;
+                let keeps = params[1].data;
+                let exports = params[2].data;
+                let all = orders + keeps + exports;
+                let date = new Date(params[0].axisValue);
+                return date.getFullYear() + '年' + (date.getMonth() + 1) + '月' + date.getDate() + '日 '
+                    + '<br/>订购中的:&nbsp;&nbsp;' + orders
+                    + '<br/>库存中的:&nbsp;&nbsp;' + keeps
+                    + '<br/>已出库的:&nbsp;&nbsp;' + exports
+                    + '<br/>物品总数:&nbsp;&nbsp;' + all;
+            }
         },
-        yAxis: {},
+        xAxis: {
+            boundaryGap: false,
+            data: data.dateTimes
+        },
+        yAxis: {
+            min: 1
+        },
+        legend: {
+            data: ['订购中的', '库存中的', '已出库的']
+        },
         series: [
             {
-                data: data.order,
+                name: '订购中的',
+                data: data.orders,
                 type: 'line',
                 stack: 'x',
                 areaStyle: {}
             },
             {
-                data: data.keep,
+                name: '库存中的',
+                data: data.keeps,
                 type: 'line',
                 stack: 'x',
                 areaStyle: {}
             },
             {
-                data: data.export,
+                name: '已出库的',
+                data: data.exports,
                 type: 'line',
                 stack: 'x',
                 areaStyle: {}
             }
         ]
     };
-    myChart.setOption(chartOption);
+    let chartPieOption = {
+        tooltip: {
+            trigger: 'item',
+            formatter: function (params) {
+                return params.data.name + '：' + params.data.value + '， 占比：' + params.percent + ' %';
+            }
+        },
+        legend: {
+            data: ['订购中的', '库存中的', '已出库的']
+        },
+        series: [
+            {
+                type: 'pie',
+                label: {
+                    show: false
+                },
+                data: [
+                    {
+                        value: data.orders[last],
+                        name: '订购中的'
+                    },
+                    {
+                        value: data.keeps[last],
+                        name: '库存中的'
+                    },
+                    {
+                        value: data.exports[last],
+                        name: '已出库的'
+                    }
+                ]
+            }
+        ]
+    };
+    chartLine.setOption(chartLineOption);
+    chartPie.setOption(chartPieOption);
 }
 
 //渲染物品表格
@@ -310,7 +425,7 @@ function renderTable(status) {
 }
 
 //渲染筛选物品表格
-function renderTableFilter(condition, word, word2) {
+function renderTableFilterItem(condition, word, word2) {
     layui.use('table', function () {
         let table = layui.table;
         let url = '/item/get/condition/';
@@ -337,6 +452,36 @@ function renderTableFilter(condition, word, word2) {
         });
         table.on('row(table-filter)', function (obj) {
             itemInfoShow(obj.data.uuid);
+        });
+    });
+}
+
+//渲染筛选所有者表格
+function renderTableFilterOwner(condition, word, word2) {
+    layui.use('table', function () {
+        let table = layui.table;
+        let url = '/owner/get/condition/';
+        if (condition === undefined || condition === 'all') {
+            condition = 'all';
+            url = '/owner/get/all/';
+        }
+        table.render({
+            elem: '#table-filter-owner'
+            , url: url //数据接口
+            , where: {'condition': condition, 'word': word, 'word2': word2}
+            , page: true //开启分页
+            , loading: true
+            , cols: [[ //所有者信息表头
+                {field: 'name', title: '所有者名称', unresize: true, minWidth: 200}
+                , {field: 'note', title: '备注', unresize: true, minWidth: 200}
+                , {field: 'id', title: '所有者编号', width: 300, unresize: true, hide: true}
+            ]]
+            , done: function (res, curr, count) {
+                $('#table-owner-list-container td').css({'cursor': 'pointer'}); //设置成指针放在表格上换成手指
+            }
+        });
+        table.on('row(table-filter-owner)', function (obj) {
+            ownerInfoShow(obj.data.id);
         });
     });
 }
@@ -583,31 +728,6 @@ function ownerCreateShow(uuid) {
 //创建新的所有者
 async function createNewOwner(data) {
     return await postData('/owner/add', data);
-}
-
-//渲染所有者列表
-function renderOwnerInfoTable() {
-    layui.use('table', function () {
-        let table = layui.table;
-        table.render({
-            elem: '#table-owner-list'
-            , url: '/owner/get/all/' //数据接口
-            , page: true //开启分页
-            , loading: true
-            , cols: [[ //所有者信息表头
-                {field: 'name', title: '所有者名称', unresize: true, minWidth: 200}
-                , {field: 'note', title: '备注', unresize: true, minWidth: 200}
-                , {field: 'id', title: '所有者编号', width: 300, unresize: true, hide: true}
-            ]]
-            , done: function (res, curr, count) {
-                $('#table-owner-list-container td').css({'cursor': 'pointer'}); //设置成指针放在表格上换成手指
-            }
-        });
-        table.on('row(table-owner-list)', function (obj) {
-            ownerInfoShow(obj.data.id);
-            //todo:弹窗显示所有者信息
-        });
-    });
 }
 
 //显示物品信息弹窗

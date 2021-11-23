@@ -104,6 +104,7 @@ public class Item {
      * 物品描述
      */
     private String description;
+    private LocalDateTime dateLastChange;
 
     /**
      * 检查元数据正确性
@@ -209,9 +210,20 @@ public class Item {
         return dateLeave == null;
     }
 
+    public void setDateRecord(String dateRecord) {
+        if (!dateRecord.isBlank()) {
+            this.dateRecord = LocalDateTime.parse(dateRecord, Config.FORMATTER);
+        } else {
+            this.dateRecord = LocalDateTime.now();
+        }
+    }
+
     @PrePersist
-    public void setDateRecord() {
-        this.dateRecord = LocalDateTime.now();
+    public void setDates() {
+        if (this.dateRecord == null) {
+            this.dateRecord = LocalDateTime.now();
+        }
+        this.dateLastChange=LocalDateTime.now();
     }
 
     public void setDateInto(String dateInto) {
@@ -282,6 +294,9 @@ public class Item {
         this.description = description;
     }
 
+    public String getDateLastChange() {
+        return dateLastChange.format(Config.FORMATTER);
+    }
     @Override
     public String toString() {
         return "\nItem{\n" +
@@ -289,9 +304,9 @@ public class Item {
                 "  name: '" + name + "'\n" +
                 "  ownerId: " + ownerId + '\n' +
                 "  status: " + status + '\n' +
-                "  dateRecord: " + dateRecord + '\n' +
-                "  dateInto: " + dateInto + '\n' +
-                "  dateLeave: " + dateLeave + '\n' +
+                "  dateRecord: " + dateRecord.format(Config.FORMATTER) + '\n' +
+                "  dateInto: " + (dateInto == null ? "" : dateInto.format(Config.FORMATTER)) + '\n' +
+                "  dateLeave: " + (dateInto == null ? "" : dateLeave.format(Config.FORMATTER)) + '\n' +
                 "  length: " + length + '\n' +
                 "  width: " + width + '\n' +
                 "  height: " + height + '\n' +

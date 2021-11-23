@@ -52,7 +52,7 @@
                         <div class="layui-row">
                             <div class="layui-col-md3">
                                 <div class="panel">
-                                    <div class="layui-card-header">物品总数</div>
+                                    <div class="layui-card-header">当前物品总数</div>
                                     <div class="layui-card-body" id="overview-count-all">
                                         \
                                     </div>
@@ -86,9 +86,25 @@
                     </div>
                 </div>
                 <!-- 折线图 -->
-                <div class="layui-panel chart-container">
-                    <div id="chart"></div>
+                <div class="layui-row layui-col-space15">
+                    <div class="layui-col-md8 chartLine-container">
+                        <div class="layui-card layui-panel">
+                            <div class="layui-card-header">近一个月的变化趋势</div>
+                            <div class="layui-card-body">
+                                <div id="chartLine"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="layui-col-md4 chartPie-container">
+                        <div class="layui-card layui-panel">
+                            <div class="layui-card-header">当前物品状态分布比例</div>
+                            <div class="layui-card-body">
+                                <div id="chartPie"></div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
+
             </div>
         </div>
         <!-- 物品管理页 -->
@@ -337,28 +353,39 @@
             <div class="layui-tab layui-tab-brief">
                 <ul class="layui-tab-title">
                     <li class="layui-this"><a href="javascript:" id="button-form-addOwner">添加所有者</a></li>
-                    <li><a href="javascript:" onclick="renderOwnerInfoTable()" id="button-owner-list">所有者列表</a></li>
+                    <li><a href="javascript:" id="button-filter-owner">筛选所有者</a></li>
                 </ul>
                 <div class="layui-tab-content">
+                    <!-- 添加所有者 -->
                     <div class="layui-tab-item layui-show">
                         <div class="content-container">
                             <form class="layui-form layui-form-pane" id="form-addOwner"
                                   style="margin: 8px auto auto;width: 800px;">
                                 <!-- 名称 -->
                                 <div class="layui-form-item">
-                                    <label class="layui-form-label">所有者名称</label>
-                                    <div class="layui-input-block">
-                                        <input type="text" name="name" required lay-verify="required"
-                                               placeholder="请输入所有者的名称" autocomplete="off" class="layui-input">
+                                    <div class="layui-row layui-col-space15">
+                                        <div class="layui-col-md12">
+                                            <label class="layui-form-label">所有者名称</label>
+                                            <div class="layui-input-block">
+                                                <input type="text" name="name" required lay-verify="required"
+                                                       placeholder="请输入所有者的名称" autocomplete="off" class="layui-input">
+                                            </div>
+                                        </div>
                                     </div>
+
                                 </div>
                                 <!-- 状态和所有者 -->
                                 <div class="layui-form-item">
-                                    <label class="layui-form-label">所有者电话</label>
-                                    <div class="layui-input-block">
-                                        <input type="tel" name="phoneNumber" placeholder="请输入所有者的电话" autocomplete="off"
-                                               class="layui-input">
+                                    <div class="layui-row layui-col-space15">
+                                        <div class="layui-col-md12">
+                                            <label class="layui-form-label">所有者电话</label>
+                                            <div class="layui-input-block">
+                                                <input type="tel" name="phoneNumber" placeholder="请输入所有者的电话" autocomplete="off"
+                                                       class="layui-input">
+                                            </div>
+                                        </div>
                                     </div>
+
                                 </div>
                                 <!-- 所有者备注 -->
                                 <div class="layui-form-item layui-form-text">
@@ -374,17 +401,82 @@
                                 </div>
                                 <!-- 提交表单 -->
                                 <div class="layui-form-item">
-                                    <button class="layui-btn" lay-submit lay-filter="form-addOwner-submit">立即提交</button>
-                                    <button type="reset" class="layui-btn layui-btn-primary" id="form-addOwner-reset">
-                                        重置
-                                    </button>
+                                    <div class="layui-row layui-col-space15">
+                                        <div class="layui-col-md12">
+                                            <button class="layui-btn" lay-submit lay-filter="form-addOwner-submit">
+                                                立即提交
+                                            </button>
+                                            <button type="reset" class="layui-btn layui-btn-primary"
+                                                    id="form-addOwner-reset">
+                                                重置
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
                             </form>
                         </div>
                     </div>
+                    <!-- 筛选所有者 -->
                     <div class="layui-tab-item">
                         <div class="content-container" id="table-owner-list-container">
-                            <table id="table-owner-list" lay-filter="table-owner-list"></table>
+                            <form class="layui-form layui-form-pane" id="form-filterOwner"
+                                  style="margin: 8px auto auto;width: 800px;">
+                                <div class="layui-form-item">
+                                    <div class="layui-row" id="form-filterOwner-search-row">
+                                        <div class="layui-col-md4">
+                                            <label class="layui-form-label">筛选条件</label>
+                                            <div class="layui-input-block">
+                                                <select name="condition" lay-filter="form-filterOwner-select">
+                                                    <option value="all">查看所有</option>
+                                                    <option value="name">名称</option>
+                                                    <option value="id">编号</option>
+                                                    <option value="phoneNumber">电话号码</option>
+                                                    <option value="note">备注</option>
+                                                    <option value="dateRegistration">添加时间</option>
+                                                    <optgroup label="范围检索">
+                                                        <option value="dateRegistrationRange">添加时间</option>
+                                                    </optgroup>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="layui-col-md8">
+                                            <input id="form-filterOwner-input" name="word"
+                                                   class="layui-input" type="text"
+                                                   placeholder="请输入筛选内容" autocomplete="off">
+                                            <input id="form-filterOwner-date-select" name="word-date"
+                                                   class="layui-input pointer layui-hide" type="text"
+                                                   placeholder="点击选择时间" autocomplete="off" readonly>
+                                            <div id="form-filterOwner-date-select-range-search-row"
+                                                 class="layui-row row-inline layui-hide">
+                                                <div class="layui-col-md6">
+                                                    <input type="text" class="layui-input pointer"
+                                                           id="form-filterOwner-date-select-range-start"
+                                                           name="word-date-start" placeholder="点击选择开始时间"
+                                                           autocomplete="off" readonly>
+                                                </div>
+                                                <div class="layui-col-md6">
+                                                    <input type="text" class="layui-input pointer"
+                                                           id="form-filterOwner-date-select-range-end"
+                                                           name="word-date-end" placeholder="点击选择结束时间"
+                                                           autocomplete="off" readonly>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <button class="layui-btn" lay-submit lay-filter="form-filterOwner-submit"
+                                                id="form-filterOwner-submit">
+                                            <svg t="1637309387707" class="icon" viewBox="0 0 1024 1024" version="1.1"
+                                                 xmlns="http://www.w3.org/2000/svg" p-id="2902" width="32" height="32">
+                                                <path d="M192 448c0-141.152 114.848-256 256-256s256 114.848 256 256-114.848 256-256 256-256-114.848-256-256z m710.624 409.376l-206.88-206.88A318.784 318.784 0 0 0 768 448c0-176.736-143.264-320-320-320S128 271.264 128 448s143.264 320 320 320a318.784 318.784 0 0 0 202.496-72.256l206.88 206.88 45.248-45.248z"
+                                                      fill="#ffffff" p-id="2903"></path>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                            <fieldset class="layui-elem-field layui-field-title">
+                                <legend>筛选条件 - <span id="filter-condition-show">查看所有</span></legend>
+                            </fieldset>
+                            <table id="table-filter-owner" lay-filter="table-filter-owner"></table>
                         </div>
                     </div>
                 </div>
@@ -392,6 +484,5 @@
         </div>
     </div>
 </div>
-
 </body>
 </html>

@@ -22,16 +22,33 @@ public class Owner {
     private String phoneNumber;
     private String note;
     private LocalDateTime dateRegistration;
+    private LocalDateTime dateLastChange;
 
     protected Owner() {
     }
 
-    public boolean check() {
+    public boolean checkInsert() {
         if (name == null || name.isBlank()) {
-            logger.warn("Owner check failed: no name");
+            logger.warn("Insert Owner failed: no name");
             return false;
         }
         return true;
+    }
+
+    public boolean checkEdit() {
+        if (name == null || name.isBlank()) {
+            logger.warn("Edit Owner failed: no name");
+            return false;
+        }
+        if (dateRegistration == null) {
+            logger.warn("Edit Owner failed: no dateRegistration");
+            return false;
+        }
+        return true;
+    }
+
+    public boolean isIdNull() {
+        return id==null;
     }
 
     public Long getId() {
@@ -67,8 +84,23 @@ public class Owner {
     }
 
     @PrePersist
-    public void setDateRegistration() {
-        this.dateRegistration = LocalDateTime.now();
+    public void setDates() {
+        if (this.dateRegistration == null) {
+            this.dateRegistration = LocalDateTime.now();
+        }
+        this.dateLastChange=LocalDateTime.now();
+    }
+
+    public void setDateRegistration(String dateRegistration) {
+        if (!dateRegistration.isBlank()) {
+            this.dateRegistration = LocalDateTime.parse(dateRegistration, Config.FORMATTER);
+        } else {
+            this.dateRegistration = LocalDateTime.now();
+        }
+    }
+
+    public String getDateLastChange() {
+        return dateLastChange.format(Config.FORMATTER);
     }
 
     @Override

@@ -46,13 +46,139 @@ public class WarehouseController {
      */
     @PostMapping(path = "/owner/add")
     public ResponseEntity<String> addNewOwner(@RequestBody Owner owner) {
-        if (owner.check()) {
+        if (owner.checkInsert()) {
             ownerRepository.save(owner);
             logger.info("Insert new Owner [" + owner.getId() + ":" + owner.getName() + "]");
             return new Response().success(owner);
         } else {
             return new Response().badRequest();
         }
+    }
+
+    @PostMapping(path = "/owner/edit")
+    public ResponseEntity<String> editOwner(@RequestBody Owner owner) {
+        if (owner != null) {
+            if (!owner.isIdNull()) {
+                long id = owner.getId();
+                Optional<Owner> ownerOpt = ownerRepository.findById(id);
+                if (ownerOpt.isPresent()) {
+                    if (owner.checkEdit()) {
+                        if (ownerOpt.get().getDateRegistration().equals(owner.getDateRegistration())) {
+                            ownerRepository.save(owner);
+                            logger.info("Edit Owner [" + owner.getId() + "]");
+                            return new Response().success(owner);
+                        } else {
+                            logger.warn("Edit Owner failed: dateRegistration changed");
+                        }
+                    }
+                } else {
+                    logger.warn("Edit Owner failed: no such owner: " + id);
+                }
+            } else {
+                logger.warn("Edit Owner failed: no id");
+            }
+        } else {
+            logger.warn("Edit Owner failed: Request Error");
+        }
+        return new Response().badRequest();
+    }
+
+    /**
+     * 根据指定的条件筛选所有者
+     *
+     * @param page      页数
+     * @param limit     每页的数量
+     * @param word      关键词1
+     * @param word2     关键词2
+     * @param condition 筛选条件
+     * @return 所有者列表
+     */
+    @GetMapping(path = "/owner/get/condition")
+    public ResponseEntity<String> getOwnerByCondition(@RequestParam int page, @RequestParam int limit,
+                                                      @RequestParam String word, @RequestParam(defaultValue = "") String word2,
+                                                      @RequestParam String condition) {
+        page -= 1;
+        List<Owner> resultList;
+        long total = 0;
+        Pageable pageable = PageRequest.of(page, limit, Sort.by(Sort.Direction.DESC, "dateRegistration"));
+        switch (condition) {
+            //根据所有者名称查找
+            case "name": {
+                //查询
+                resultList = ownerRepository.findAllByNameContaining(word, pageable);
+                //计数
+                total = ownerRepository.countAllByNameContaining(word);
+                break;
+            }
+            //根据所有者编号查找
+            case "id": {
+                try {
+                    Long id = Long.parseLong(word);
+                    //查询
+                    Optional<Owner> owner = ownerRepository.findById(id);
+                    resultList = new ArrayList<>(1);
+                    if (owner.isPresent()) {
+                        resultList.add(owner.get());
+                        //计数
+                        total = 1;
+                    }
+                } catch (IllegalArgumentException e) {
+                    //编号格式错误
+                    logger.warn("Parse Long[id] failed: " + word);
+                    resultList = new ArrayList<>();
+                }
+                break;
+            }
+            //根据所有者电话查找
+            case "phoneNumber": {
+                //查询
+                resultList = ownerRepository.findAllByPhoneNumber(word, pageable);
+                //计数
+                total = ownerRepository.countAllByPhoneNumber(word);
+                break;
+            }
+            //根据所有者登记时间查找
+            case "dateRegistration": {
+                try {
+                    LocalDateTime dateTime = LocalDateTime.parse(word, Config.FORMATTER);
+                    resultList = ownerRepository.findAllByDateRegistration(dateTime, pageable);
+                    total = ownerRepository.countAllByDateRegistration(dateTime);
+                } catch (DateTimeParseException e) {
+                    logger.warn("Parse DateTime[dateRegistration] failed: " + word);
+                    resultList = new ArrayList<>();
+                }
+                break;
+            }
+            //根据所有者登记时间范围查找
+            case "dateRegistrationRange": {
+                try {
+                    LocalDateTime dateTimeStart = LocalDateTime.parse(word, Config.FORMATTER);
+                    LocalDateTime dateTimeEnd = LocalDateTime.parse(word2, Config.FORMATTER);
+                    resultList = ownerRepository.findAllByDateRegistrationBetween(dateTimeStart, dateTimeEnd, pageable);
+                    total = ownerRepository.countAllByDateRegistrationBetween(dateTimeStart, dateTimeEnd);
+                } catch (DateTimeParseException e) {
+                    logger.warn("Parse DateTime[dateRegistration] failed: " + word + ", " + word2);
+                    resultList = new ArrayList<>();
+                }
+                break;
+            }
+            //根据所有者备注查找
+            case "note": {
+                resultList = ownerRepository.findAllByNoteContaining(word, pageable);
+                total = ownerRepository.countAllByNoteContaining(word);
+                break;
+            }
+            default: {
+                return new Response().badRequest();
+            }
+        }
+        //提取所有者ID等信息
+        List<OwnersTableItem> ownersTableItems = new ArrayList<>();
+        for (Owner owner : resultList) {
+            ownersTableItems.add(new OwnersTableItem(owner));
+        }
+        OwnersTable ownersTable = new OwnersTable(ownersTableItems, total);
+        return new Response().success(ownersTable);
     }
 
     /**
@@ -89,6 +215,7 @@ public class WarehouseController {
             return new Response().notFound();
         }
     }
+
 
     /**
      * 添加新的物品的元数据
@@ -504,28 +631,22 @@ public class WarehouseController {
     @GetMapping(path = "/item/get/quantity")
     public ResponseEntity<String> getItemsQuantity(@RequestParam int limit) {
         List<Item> items = itemRepository.findAll();
-        LocalDateTime localDateTime = LocalDateTime.now();
-        List<String> dateTimes = new ArrayList<>(limit);
-        List<Long> orders = new ArrayList<>(limit);
-        List<Long> keeps = new ArrayList<>(limit);
-        List<Long> exports = new ArrayList<>(limit);
+        LocalDateTime localDateTime = LocalDateTime.now().with(LocalTime.MAX);
+        String[] dateTimes = new String[limit];
+        Long[] orders = new Long[limit];
+        Long[] keeps = new Long[limit];
+        Long[] exports = new Long[limit];
         for (int i = 0; i < limit; i++) {
             long order = countOrders(items, localDateTime);
             long keep = countKeeps(items, localDateTime);
             long export = countExports(items, localDateTime);
-            if (order + keep + export == 0 && i > 10) {
-                continue;
-            }
-            dateTimes.add(localDateTime.format(Config.FORMATTER_HOURS));
-            orders.add(order);
-            keeps.add(keep);
-            exports.add(export);
-            localDateTime = localDateTime.minusHours(1);
+            int index = limit - i - 1;
+            dateTimes[index] = localDateTime.format(Config.FORMATTER_DAY);
+            orders[index] = order;
+            keeps[index] = keep;
+            exports[index] = export;
+            localDateTime = localDateTime.minusDays(1);
         }
-        Collections.reverse(dateTimes);
-        Collections.reverse(orders);
-        Collections.reverse(keeps);
-        Collections.reverse(exports);
         Quantity quantity = new Quantity(dateTimes, orders, keeps, exports);
         return new Response().success(quantity);
     }
@@ -540,8 +661,8 @@ public class WarehouseController {
     private long countOrders(List<Item> items, LocalDateTime localDateTime) {
         long counts = 0;
         for (Item item : items) {
-            if ((item.isDateIntoNull() && localDateTime.isAfter(item.compareDateRecord())) ||
-                    (!item.isDateIntoNull() && localDateTime.isBefore(item.compareDateInto()))) {
+            if (localDateTime.isAfter(item.compareDateRecord()) &&
+                    (item.isDateIntoNull() || localDateTime.isBefore(item.compareDateInto()))) {
                 counts++;
             }
         }
@@ -665,16 +786,16 @@ public class WarehouseController {
     }
 
     static class Quantity {
-        public List<String> dateTime;
-        public List<Long> order;
-        public List<Long> keep;
-        public List<Long> export;
+        public String[] dateTimes;
+        public Long[] orders;
+        public Long[] keeps;
+        public Long[] exports;
 
-        public Quantity(List<String> dateTime, List<Long> order, List<Long> keep, List<Long> export) {
-            this.dateTime = dateTime;
-            this.order = order;
-            this.keep = keep;
-            this.export = export;
+        public Quantity(String[] dateTimes, Long[] orders, Long[] keeps, Long[] exports) {
+            this.dateTimes = dateTimes;
+            this.orders = orders;
+            this.keeps = keeps;
+            this.exports = exports;
         }
     }
 }

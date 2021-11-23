@@ -55,6 +55,12 @@ public class WarehouseController {
         }
     }
 
+    /**
+     * 修改所有者信息
+     *
+     * @param owner 所有者信息
+     * @return 已修改的所有者信息
+     */
     @PostMapping(path = "/owner/edit")
     public ResponseEntity<String> editOwner(@RequestBody Owner owner) {
         if (owner != null) {
@@ -64,11 +70,12 @@ public class WarehouseController {
                 if (ownerOpt.isPresent()) {
                     if (owner.checkEdit()) {
                         if (ownerOpt.get().getDateRegistration().equals(owner.getDateRegistration())) {
+                            owner.edit();
                             ownerRepository.save(owner);
                             logger.info("Edit Owner [" + owner.getId() + "]");
                             return new Response().success(owner);
                         } else {
-                            logger.warn("Edit Owner failed: dateRegistration changed");
+                            logger.warn("Edit Owner failed: dateRegistration Inconsistent");
                         }
                     }
                 } else {
@@ -234,7 +241,7 @@ public class WarehouseController {
                 logger.warn("Add new item failed: no owner " + item.getOwnerId());
             }
         }
-        if (item.check() && ownerCheck) {
+        if (item.checkInsert() && ownerCheck) {
             itemRepository.save(item);
             logger.info("Insert new Item [" + item.getUuid() + ":" + item.getName() + "]");
             return new Response().success(item);
@@ -242,6 +249,55 @@ public class WarehouseController {
             return new Response().badRequest();
         }
     }
+
+    /**
+     * 修改物品信息
+     *
+     * @param item 物品信息
+     * @return 已修改的物品信息
+     */
+    @PostMapping(path = "/item/edit")
+    public ResponseEntity<String> editOwner(@RequestBody Item item) {
+        if (item != null) {
+            if (!item.isUuidNull()) {
+                UUID uuid = item.getUuid();
+                Optional<Item> itemOpt = itemRepository.findById(uuid);
+                if (itemOpt.isPresent()) {
+                    if (item.checkEdit()) {
+                        if (itemOpt.get().getDateRecord().equals(item.getDateRecord())) {
+                            switch (itemOpt.get().getStatus()) {
+                                case keep: {
+                                    item.setKeep();
+                                    break;
+                                }
+                                case export: {
+                                    item.setExport();
+                                    break;
+                                }
+                                default: {
+                                    item.setOrder();
+                                }
+                            }
+                            item.edit();
+                            itemRepository.save(item);
+                            logger.info("Edit Item [" + item.getUuid() + "]");
+                            return new Response().success(item);
+                        } else {
+                            logger.warn("Edit Item failed: dateRecord Inconsistent");
+                        }
+                    }
+                } else {
+                    logger.warn("Edit Item failed: no such owner: " + uuid);
+                }
+            } else {
+                logger.warn("Edit Item failed: no uuid");
+            }
+        } else {
+            logger.warn("Edit Item failed: Request Error");
+        }
+        return new Response().badRequest();
+    }
+
 
     /**
      * 物品状态变更

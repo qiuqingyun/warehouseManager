@@ -111,10 +111,23 @@ public class Item {
      *
      * @return 正确性
      */
-    public boolean check() {
+    public boolean checkInsert() {
         //名称正确性
         if (name == null || name.isBlank()) {
-            logger.warn("Item check failed: no name");
+            logger.warn("Insert Item failed: no name");
+            return false;
+        }
+        return true;
+    }
+
+    public boolean checkEdit() {
+        //名称正确性
+        if (name == null || name.isBlank()) {
+            logger.warn("Edit Item failed: no name");
+            return false;
+        }
+        if (dateRecord == null) {
+            logger.warn("Edit Item failed: no dateRecord");
             return false;
         }
         return true;
@@ -160,6 +173,10 @@ public class Item {
 
     public UUID getUuid() {
         return uuid;
+    }
+
+    public boolean isUuidNull() {
+        return this.uuid == null;
     }
 
     public void setName(String name) {
@@ -223,7 +240,7 @@ public class Item {
         if (this.dateRecord == null) {
             this.dateRecord = LocalDateTime.now();
         }
-        this.dateLastChange=LocalDateTime.now();
+        this.dateLastChange = LocalDateTime.now();
     }
 
     public void setDateInto(String dateInto) {
@@ -297,6 +314,24 @@ public class Item {
     public String getDateLastChange() {
         return dateLastChange.format(Config.FORMATTER);
     }
+
+    public void edit() {
+        this.dateLastChange = LocalDateTime.now();
+    }
+
+    public void setOrder(){
+        this.status=Status.order;
+        this.dateInto=null;
+        this.dateLeave=null;
+    }
+    public void setKeep(){
+        this.status=Status.keep;
+        this.dateLeave=null;
+    }
+    public void setExport(){
+        this.status=Status.export;
+    }
+
     @Override
     public String toString() {
         return "\nItem{\n" +

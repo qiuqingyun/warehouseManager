@@ -99,6 +99,10 @@ public class Owner {
         }
     }
 
+    public void edit() {
+        this.dateLastChange = LocalDateTime.now();
+    }
+
     public String getDateLastChange() {
         return dateLastChange.format(Config.FORMATTER);
     }

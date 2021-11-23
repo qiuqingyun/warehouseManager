@@ -3,6 +3,7 @@ package com.qing98.warehouseManager.repository;
 import com.qing98.warehouseManager.entity.Item;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -103,4 +104,12 @@ public interface ItemRepository extends JpaRepository<Item, UUID> {
 
     long countAllByArchitectureContaining(String architecture);
 
+    @Query(value = "select count(item.uuid) as ans from Item item where item.dateRecord<?1 and ((item.dateInto is null) or item.dateInto>?1)")
+    long countOrders(LocalDateTime dateTime);
+
+    @Query(value = "select count(item.uuid) as ans from Item item where item.dateInto is not null and item.dateInto<?1 and ((item.dateLeave is null) or item.dateLeave>?1)")
+    long countKeeps(LocalDateTime dateTime);
+
+    @Query(value = "select count(item.uuid) as ans from Item item where item.dateLeave is not null and item.dateLeave<?1")
+    long countExports(LocalDateTime dateTime);
 }

@@ -189,8 +189,24 @@ public class Item {
         return dateRecord.format(Config.FORMATTER);
     }
 
-    public LocalDateTime compare() {
+    public LocalDateTime compareDateRecord() {
         return dateRecord;
+    }
+
+    public LocalDateTime compareDateInto() {
+        return dateInto;
+    }
+
+    public boolean isDateIntoNull() {
+        return dateInto == null;
+    }
+
+    public LocalDateTime compareDateLeave() {
+        return dateLeave;
+    }
+
+    public boolean isDateLeaveNull() {
+        return dateLeave == null;
     }
 
     @PrePersist

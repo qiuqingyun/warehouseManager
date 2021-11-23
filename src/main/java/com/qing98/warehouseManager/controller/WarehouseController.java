@@ -18,6 +18,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
 import java.util.*;
 
@@ -62,7 +63,7 @@ public class WarehouseController {
     @GetMapping(path = "/owner/get/all")
     public ResponseEntity<String> getAllOwner(@RequestParam int page, @RequestParam int limit) {
         page -= 1;
-        Pageable pageable = PageRequest.of(page, limit,Sort.by(Sort.Direction.DESC, "dateRegistration"));
+        Pageable pageable = PageRequest.of(page, limit, Sort.by(Sort.Direction.DESC, "dateRegistration"));
         List<Owner> resultList = ownerRepository.findAll(pageable).toList();
         //提取所有者ID，名称信息
         List<OwnersTableItem> ownersTableItems = new ArrayList<>();
@@ -208,12 +209,14 @@ public class WarehouseController {
     }
 
     /**
-     * @param page
-     * @param limit
-     * @param word
-     * @param word2
-     * @param condition
-     * @return
+     * 根据指定的条件筛选物品
+     *
+     * @param page      页数
+     * @param limit     每页的数量
+     * @param word      关键词1
+     * @param word2     关键词2
+     * @param condition 筛选条件
+     * @return 物品列表
      */
     @GetMapping(path = "/item/get/condition")
     public ResponseEntity<String> getItemByCondition(@RequestParam int page, @RequestParam int limit,
@@ -261,7 +264,7 @@ public class WarehouseController {
                     totalList.addAll(itemRepository.findAllByOwnerId(ownerId));
                 }
                 //排序
-                totalList.sort(Comparator.comparing(Item::compare));
+                totalList.sort(Comparator.comparing(Item::compareDateRecord));
                 //分页
                 int pageStart = Math.min(page * limit, totalList.size());
                 int pageEnd = Math.min((page + 1) * limit, totalList.size());
@@ -473,7 +476,6 @@ public class WarehouseController {
         return new Response().success(itemsTable);
     }
 
-
     /**
      * 获取所有的物品元数据
      *
@@ -493,6 +495,98 @@ public class WarehouseController {
         return new Response().success(itemsTable);
     }
 
+    /**
+     * 按小时获取各状态下物品数量
+     *
+     * @param limit 时间点数量
+     * @return 数量数组
+     */
+    @GetMapping(path = "/item/get/quantity")
+    public ResponseEntity<String> getItemsQuantity(@RequestParam int limit) {
+        List<Item> items = itemRepository.findAll();
+        LocalDateTime localDateTime = LocalDateTime.now();
+        List<String> dateTimes = new ArrayList<>(limit);
+        List<Long> orders = new ArrayList<>(limit);
+        List<Long> keeps = new ArrayList<>(limit);
+        List<Long> exports = new ArrayList<>(limit);
+        for (int i = 0; i < limit; i++) {
+            long order = countOrders(items, localDateTime);
+            long keep = countKeeps(items, localDateTime);
+            long export = countExports(items, localDateTime);
+            if (order + keep + export == 0 && i > 10) {
+                continue;
+            }
+            dateTimes.add(localDateTime.format(Config.FORMATTER_HOURS));
+            orders.add(order);
+            keeps.add(keep);
+            exports.add(export);
+            localDateTime = localDateTime.minusHours(1);
+        }
+        Collections.reverse(dateTimes);
+        Collections.reverse(orders);
+        Collections.reverse(keeps);
+        Collections.reverse(exports);
+        Quantity quantity = new Quantity(dateTimes, orders, keeps, exports);
+        return new Response().success(quantity);
+    }
+
+    /**
+     * 遍历所有物品中，在当前时间点下，处于订购状态的物品数量
+     *
+     * @param items         物品列表
+     * @param localDateTime 时间点
+     * @return 物品数量
+     */
+    private long countOrders(List<Item> items, LocalDateTime localDateTime) {
+        long counts = 0;
+        for (Item item : items) {
+            if ((item.isDateIntoNull() && localDateTime.isAfter(item.compareDateRecord())) ||
+                    (!item.isDateIntoNull() && localDateTime.isBefore(item.compareDateInto()))) {
+                counts++;
+            }
+        }
+        return counts;
+    }
+
+    /**
+     * 遍历所有物品中，在当前时间点下，处于库存状态的物品数量
+     *
+     * @param items         物品列表
+     * @param localDateTime 时间点
+     * @return 物品数量
+     */
+    private long countKeeps(List<Item> items, LocalDateTime localDateTime) {
+        long counts = 0;
+        for (Item item : items) {
+            if (!item.isDateIntoNull()) {
+                if (localDateTime.isAfter(item.compareDateInto())) {
+                    if (item.isDateLeaveNull() || localDateTime.isBefore(item.compareDateLeave())) {
+                        counts++;
+                    }
+                }
+            }
+        }
+        return counts;
+    }
+
+    /**
+     * 遍历所有物品中，在当前时间点下，处于出库状态的物品数量
+     *
+     * @param items         物品列表
+     * @param localDateTime 时间点
+     * @return 物品数量
+     */
+    private long countExports(List<Item> items, LocalDateTime localDateTime) {
+        long counts = 0;
+        for (Item item : items) {
+            if (!item.isDateLeaveNull()) {
+                if (localDateTime.isAfter(item.compareDateLeave())) {
+                    counts++;
+                }
+            }
+        }
+        return counts;
+    }
 
     class Response {
         public ResponseEntity<String> success(Object object) {
@@ -567,6 +661,20 @@ public class WarehouseController {
         public OwnersTable(List<OwnersTableItem> data, long count) {
             this.data = data;
             this.count = count;
+        }
+    }
+
+    static class Quantity {
+        public List<String> dateTime;
+        public List<Long> order;
+        public List<Long> keep;
+        public List<Long> export;
+
+        public Quantity(List<String> dateTime, List<Long> order, List<Long> keep, List<Long> export) {
+            this.dateTime = dateTime;
+            this.order = order;
+            this.keep = keep;
+            this.export = export;
         }
     }
 }

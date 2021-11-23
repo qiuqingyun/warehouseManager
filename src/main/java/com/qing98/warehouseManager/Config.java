@@ -8,4 +8,5 @@ import java.util.Locale;
  */
 public class Config {
     public static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss", Locale.CHINA);
+    public static final DateTimeFormatter FORMATTER_HOURS = DateTimeFormatter.ofPattern("yyyy-MM-dd H时", Locale.CHINA);
 }

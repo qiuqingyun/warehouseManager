@@ -66,16 +66,42 @@ li.layui-nav-item a {
 fieldset.layui-elem-field.layui-field-title {
     margin-top: 30px;
 }
+
 button.layui-btn.layui-btn-fluid.button-create-new-owner {
     margin: 15px 0 5px 0;
 }
+
 form#form-owner-create {
     padding: 15px 20px 15px 15px;
 }
+
 #form-owner-create label.layui-form-label {
     width: 30px;
     padding-left: 5px;
 }
+
 #form-owner-create .layui-input-block {
     margin-left: 50px;
+}
+
+#page-overview .panel {
+    padding: 10px 30px;
+    text-align: center;
+}
+
+#page-overview .panel .layui-card-header {
+    font-size: 16px;
+}
+
+#page-overview .panel .layui-card-body {
+    font-size: 30px;
+    padding-top: 20px;
+}
+.chart-container{
+    margin-top: 20px;
+}
+#chart {
+    width: 800px;
+    height: 400px;
+    margin:40px auto 0 auto;
 }

@@ -2,6 +2,8 @@ const itemInfoKeys = ["name", "uuid", "status", "ownerId", "dateRecord", "dateIn
 const itemInfoNames = ["物品名称", "物品编号", "物品状态", "所有者", "登记时间", "入库时间", "出库时间", "物品描述", "尺寸：长", "尺寸：宽", "尺寸：高", "物品架构"];
 const itemInfoButtons = [[['物品入库', '添加所有者', '返回'], ['物品入库', '返回']], [['物品出库', '添加所有者', '返回'], ['物品出库', '返回']], [['返回'], ['返回']]];
 const itemMoveConfirms = ['确定将物品入库？', '确定将物品出库？', '错误'];
+const ownerInfoKeys = ["name", "id", "phoneNumber", "dateRegistration", "note"];
+const ownerInfoNames = ["名称", "编号", "电话号码", "注册时间", "备注"];
 const conditionName = {
     "all": "查看所有",
     "name": "物品名称",
@@ -23,9 +25,10 @@ const conditionName = {
     "heightRange": "物品高度(范围)",
     "architecture": "物品架构"
 };
-let tabShowNow = "page-data"
+let tabShowNow = "page-overview"
 let ownerChosen = '';
 let createOwnerFlag = false;
+let myChart;
 window.onload = function () {
     renderTableFilter();
     //渲染时间选择控件
@@ -85,6 +88,13 @@ window.onload = function () {
     });
     form.on('submit(form-owner-create-submit)', function (data) {
         createOwnerFlag = true;
+        return false;
+    });
+    form.on('submit(form-addOwner-submit)', function (submit) {
+        createNewOwner(submit.field).then(() => {
+            layui.layer.msg('提交成功', {icon: 1});
+            document.getElementById('form-addOwner-reset').click();
+        });
         return false;
     });
     //选择事件回调
@@ -186,6 +196,9 @@ window.onload = function () {
             }
         }
     });
+    myChart = echarts.init(document.getElementById('chart'));
+    getQuantity();
+    setInterval(getQuantity, 5000);
 }
 
 //提交新物品
@@ -208,6 +221,44 @@ async function submitItem(submit) {
         data.architecture = 'x86';
     }
     await postData('/item/add', data);
+}
+
+async function getQuantity() {
+    let data = JSON.parse(await getData('/item/get/quantity?limit=48'));
+    console.log(data);
+    let last=data.order.length-1;
+    document.getElementById('overview-count-all').innerText = data.order[last] + data.keep[last] + data.export[last];
+    document.getElementById('overview-count-order').innerText = data.order[last];
+    document.getElementById('overview-count-keep').innerText = data.keep[last];
+    document.getElementById('overview-count-export').innerText = data.export[last];
+    let chartOption = {
+        tooltip: {},
+        xAxis: {
+            data: data.dateTime
+        },
+        yAxis: {},
+        series: [
+            {
+                data: data.order,
+                type: 'line',
+                stack: 'x',
+                areaStyle: {}
+            },
+            {
+                data: data.keep,
+                type: 'line',
+                stack: 'x',
+                areaStyle: {}
+            },
+            {
+                data: data.export,
+                type: 'line',
+                stack: 'x',
+                areaStyle: {}
+            }
+        ]
+    };
+    myChart.setOption(chartOption);
 }
 
 //渲染物品表格
@@ -404,7 +455,7 @@ function ownerListShow(uuid) {
         , btn: ['确定', '返回']
         , closeBtn: 0
         , success: function (layero, index) {
-            renderOwnerTable();
+            renderOwnerSelectTable();
         }
         , yes: function (index, layero) {
             var checkStatus = layui.table.checkStatus('table-owner');
@@ -430,8 +481,8 @@ function ownerListShow(uuid) {
     });
 }
 
-//渲染所有者表格
-function renderOwnerTable() {
+//渲染所有者选择列表
+function renderOwnerSelectTable() {
     layui.use('table', function () {
         let table = layui.table;
         table.render({
@@ -472,7 +523,7 @@ function ownerCreateShow(uuid) {
     let formPhoneNumber = '<div class="layui-form-item">\n' +
         '    <label class="layui-form-label">电话</label>\n' +
         '    <div class="layui-input-block">\n' +
-        '      <input type="tel" name="phone" placeholder="请输入所有者的电话" autocomplete="off" class="layui-input">\n' +
+        '      <input type="tel" name="phoneNumber" placeholder="请输入所有者的电话" autocomplete="off" class="layui-input">\n' +
         '    </div>\n' +
         '  </div>';
     let formNote = '<div class="layui-form-item layui-form-text">\n' +
@@ -505,7 +556,8 @@ function ownerCreateShow(uuid) {
                 if (createOwnerFlag) {
                     createOwnerFlag = false;
                     layer.confirm('确定新建所有者，并添加为物品的所有者？', function () {
-                        createNewOwner().then((e) => {
+                        let data = layui.form.val("form-owner-create");
+                        createNewOwner(data).then((e) => {
                             if (e !== undefined) {
                                 if (uuid === 'undefined') {
                                     document.getElementById('owner-input').value = e.name;
@@ -528,9 +580,71 @@ function ownerCreateShow(uuid) {
     });
 }
 
-async function createNewOwner() {
-    let data = layui.form.val("form-owner-create");
+//创建新的所有者
+async function createNewOwner(data) {
     return await postData('/owner/add', data);
+}
+
+//渲染所有者列表
+function renderOwnerInfoTable() {
+    layui.use('table', function () {
+        let table = layui.table;
+        table.render({
+            elem: '#table-owner-list'
+            , url: '/owner/get/all/' //数据接口
+            , page: true //开启分页
+            , loading: true
+            , cols: [[ //所有者信息表头
+                {field: 'name', title: '所有者名称', unresize: true, minWidth: 200}
+                , {field: 'note', title: '备注', unresize: true, minWidth: 200}
+                , {field: 'id', title: '所有者编号', width: 300, unresize: true, hide: true}
+            ]]
+            , done: function (res, curr, count) {
+                $('#table-owner-list-container td').css({'cursor': 'pointer'}); //设置成指针放在表格上换成手指
+            }
+        });
+        table.on('row(table-owner-list)', function (obj) {
+            ownerInfoShow(obj.data.id);
+            //todo:弹窗显示所有者信息
+        });
+    });
+}
+
+//显示物品信息弹窗
+async function ownerInfoShow(id) {
+    let ownerInfo = JSON.parse(await getData('/owner/get?id=' + id));
+    console.log(ownerInfo)
+    let name = ownerInfo.name;
+    let phoneNumber = ownerInfo.phoneNumber;
+    let note = ownerInfo.note;
+    let dateRegistration = ownerInfo.dateRegistration;
+
+    let table = '<table class="layui-table">';
+    for (let i = 0; i < ownerInfoKeys.length; i++) {
+        let infoKey = ownerInfoKeys[i];
+        let infoValue = ownerInfo[infoKey];
+        table += "<tr><td>";
+        table += ownerInfoNames[i];
+        table += "</td><td>"
+        if (infoValue === null) {
+            infoValue = '无';
+        }
+        table += infoValue;
+        table += "</td></tr>";
+    }
+    table += "</table>";
+    let tableContainer = '<div class="table-item-info">' + table + '</div>'
+    layer.open({
+        type: 1
+        , title: '所有者信息'
+        , content: tableContainer
+        , area: ['800px', '400px']
+        , shadeClose: true
+        , resize: false
+        , fixed: true
+        , closeBtn: 0
+        , btn: ['返回']
+    });
 }
 
 //AJAX get

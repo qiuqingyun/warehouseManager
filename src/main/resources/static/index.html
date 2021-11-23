@@ -5,6 +5,10 @@
     <title>物品管理系统</title>
     <link rel="stylesheet" type="text/css" href="https://www.layuicdn.com/layui-v2.6.8/css/layui.css"/>
     <link rel="stylesheet" href="global.css">
+    <script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://www.layuicdn.com/layui-v2.6.8/layui.js"></script>
+    <script src="https://cdn.bootcdn.net/ajax/libs/echarts/5.1.2/echarts.common.min.js"></script>
+    <script src="global.js"></script>
 </head>
 <body>
 <div class="layui-layout layui-layout-admin">
@@ -26,10 +30,13 @@
     <div class="layui-side layui-bg-black">
         <div class="layui-side-scroll">
             <ul class="layui-nav layui-nav-tree">
-                <li class="layui-nav-item" tabId="page-overview" onclick="switchPage(this)"><a
+                <li class="layui-nav-item layui-this" tabId="page-overview" onclick="switchPage(this)"><a
                         href="javascript:">总览</a></li>
-                <li class="layui-nav-item layui-this" tabId="page-data" onclick="switchPage(this)"><a
+                <li class="layui-nav-item" tabId="page-data" onclick="switchPage(this)"><a
                         href="javascript:">物品管理</a>
+                </li>
+                <li class="layui-nav-item" tabId="page-owner" onclick="switchPage(this)"><a
+                        href="javascript:">所有者管理</a>
                 </li>
             </ul>
         </div>
@@ -37,20 +44,55 @@
     <!-- 内容主体区域 -->
     <div class="layui-body">
         <!-- 总览页 -->
-        <div class="body-container layui-hide" id="page-overview">
+        <div class="body-container " id="page-overview">
             <div class="content-container">
-                <div class="layui-card layui-panel">
-                    <div class="layui-card-header">
-                        总览
-                    </div>
+                <!-- 数量条 -->
+                <div class="layui-panel">
                     <div class="layui-card-body">
-
+                        <div class="layui-row">
+                            <div class="layui-col-md3">
+                                <div class="panel">
+                                    <div class="layui-card-header">物品总数</div>
+                                    <div class="layui-card-body" id="overview-count-all">
+                                        \
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="layui-col-md3">
+                                <div class="panel">
+                                    <div class="layui-card-header">订购中的</div>
+                                    <div class="layui-card-body" id="overview-count-order">
+                                        \
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="layui-col-md3">
+                                <div class="panel">
+                                    <div class="layui-card-header">库存中的</div>
+                                    <div class="layui-card-body" id="overview-count-keep">
+                                        \
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="layui-col-md3">
+                                <div class="panel">
+                                    <div class="layui-card-header">已出库的</div>
+                                    <div class="layui-card-body" id="overview-count-export">
+                                        \
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
+                </div>
+                <!-- 折线图 -->
+                <div class="layui-panel chart-container">
+                    <div id="chart"></div>
                 </div>
             </div>
         </div>
         <!-- 物品管理页 -->
-        <div class="body-container" id="page-data">
+        <div class="body-container layui-hide" id="page-data">
             <div class="layui-tab layui-tab-brief">
                 <!-- 标签 -->
                 <ul class="layui-tab-title">
@@ -163,7 +205,7 @@
                                 <div class="layui-form-item layui-form-text">
                                     <div class="layui-row layui-col-space15">
                                         <div class="layui-col-md12">
-                                            <label class="layui-form-label">物品描述</label>
+                                            <label class="layui-form-label">&nbsp;&nbsp;&nbsp;物品描述</label>
                                             <div class="layui-input-block">
                                                 <textarea name="description" placeholder="请输入物品描述"
                                                           class="layui-textarea"></textarea>
@@ -290,10 +332,66 @@
                 </div>
             </div>
         </div>
+        <!-- 所有者管理页 -->
+        <div class="body-container layui-hide" id="page-owner">
+            <div class="layui-tab layui-tab-brief">
+                <ul class="layui-tab-title">
+                    <li class="layui-this"><a href="javascript:" id="button-form-addOwner">添加所有者</a></li>
+                    <li><a href="javascript:" onclick="renderOwnerInfoTable()" id="button-owner-list">所有者列表</a></li>
+                </ul>
+                <div class="layui-tab-content">
+                    <div class="layui-tab-item layui-show">
+                        <div class="content-container">
+                            <form class="layui-form layui-form-pane" id="form-addOwner"
+                                  style="margin: 8px auto auto;width: 800px;">
+                                <!-- 名称 -->
+                                <div class="layui-form-item">
+                                    <label class="layui-form-label">所有者名称</label>
+                                    <div class="layui-input-block">
+                                        <input type="text" name="name" required lay-verify="required"
+                                               placeholder="请输入所有者的名称" autocomplete="off" class="layui-input">
+                                    </div>
+                                </div>
+                                <!-- 状态和所有者 -->
+                                <div class="layui-form-item">
+                                    <label class="layui-form-label">所有者电话</label>
+                                    <div class="layui-input-block">
+                                        <input type="tel" name="phoneNumber" placeholder="请输入所有者的电话" autocomplete="off"
+                                               class="layui-input">
+                                    </div>
+                                </div>
+                                <!-- 所有者备注 -->
+                                <div class="layui-form-item layui-form-text">
+                                    <div class="layui-row layui-col-space15">
+                                        <div class="layui-col-md12">
+                                            <label class="layui-form-label">&nbsp;所有者备注</label>
+                                            <div class="layui-input-block">
+                                                <textarea name="note" placeholder="请输入所有者的备注"
+                                                          class="layui-textarea"></textarea>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- 提交表单 -->
+                                <div class="layui-form-item">
+                                    <button class="layui-btn" lay-submit lay-filter="form-addOwner-submit">立即提交</button>
+                                    <button type="reset" class="layui-btn layui-btn-primary" id="form-addOwner-reset">
+                                        重置
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                    <div class="layui-tab-item">
+                        <div class="content-container" id="table-owner-list-container">
+                            <table id="table-owner-list" lay-filter="table-owner-list"></table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
-<script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
-<script src="https://www.layuicdn.com/layui-v2.6.8/layui.js"></script>
-<script src="global.js"></script>
+
 </body>
 </html>

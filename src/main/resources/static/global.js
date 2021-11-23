@@ -25,7 +25,7 @@ const itemConditionName = {
     "heightRange": "物品高度(范围)",
     "architecture": "物品架构"
 };
-const ownerConditionName={
+const ownerConditionName = {
     "all": "查看所有",
     "name": "名称",
     "id": "编号",
@@ -39,6 +39,8 @@ let ownerChosen = '';
 let createOwnerFlag = false;
 let chartLine;
 let chartPie;
+let ownerEditId;
+let ownerEditDateRegistration;
 window.onload = function () {
     renderTableFilterItem();
     renderTableFilterOwner();
@@ -129,6 +131,19 @@ window.onload = function () {
         createNewOwner(submit.field).then(() => {
             layui.layer.msg('提交成功', {icon: 1});
             document.getElementById('form-addOwner-reset').click();
+        });
+        return false;
+    });
+    form.on('submit(form-editOwner-submit)', function (data) {
+        layer.confirm('确定修改所有者的信息？', function () {
+            console.log(data.field)
+            data.field['id']=ownerEditId;
+            data.field['dateRegistration']=ownerEditDateRegistration;
+            console.log(data.field)
+            editOwner(data.field).then((e) => {
+                layer.closeAll();
+                ownerInfoShow(ownerEditId);
+            });
         });
         return false;
     });
@@ -281,6 +296,7 @@ async function submitItem(submit) {
     await postData('/item/add', data);
 }
 
+//获取物品数量
 async function getQuantity() {
     let data = JSON.parse(await getData('/item/get/quantity?limit=30'));
     // console.log(data);
@@ -524,7 +540,7 @@ async function itemInfoShow(uuid) {
         table += "</td></tr>";
     }
     table += "</table>";
-    let tableContainer = '<div class="table-item-info">' + table + '</div>'
+    let tableContainer = '<div class="table-item-info" lay-filter="table-item-info">' + table + '</div>'
 
     let status = 0;
     if (itemInfo.status === 'keep') {
@@ -730,15 +746,14 @@ async function createNewOwner(data) {
     return await postData('/owner/add', data);
 }
 
-//显示物品信息弹窗
+//修改所有者信息
+async function editOwner(data) {
+    return await postData('/owner/edit', data);
+}
+
+//显示所有者信息弹窗
 async function ownerInfoShow(id) {
     let ownerInfo = JSON.parse(await getData('/owner/get?id=' + id));
-    console.log(ownerInfo)
-    let name = ownerInfo.name;
-    let phoneNumber = ownerInfo.phoneNumber;
-    let note = ownerInfo.note;
-    let dateRegistration = ownerInfo.dateRegistration;
-
     let table = '<table class="layui-table">';
     for (let i = 0; i < ownerInfoKeys.length; i++) {
         let infoKey = ownerInfoKeys[i];
@@ -764,6 +779,61 @@ async function ownerInfoShow(id) {
         , fixed: true
         , closeBtn: 0
         , btn: ['返回']
+        // , yes: function (index, layero) {
+        //     editOwnerInfoShow(layero);
+        // }
+    });
+}
+
+//显示修改所有者信息弹窗
+function editOwnerInfoShow(layero) {
+    let tbody = layero.children()[1].children[0].children[0].children[0];
+    let nameValue = tbody.children[0].children[1].innerText;
+    ownerEditId = tbody.children[1].children[1].innerText;
+    let phoneNumberValue = tbody.children[2].children[1].innerText;
+    ownerEditDateRegistration = tbody.children[3].children[1].innerText;
+    let noteValue = tbody.children[4].children[1].innerText;
+    let formContainer = '<div class="content-container">\n' +
+        '    <form class="layui-form layui-form-pane" id="form-editOwner" lay-filter="form-editOwner">\n' +
+        '        <div class="layui-form-item">\n' +
+        '            <label class="layui-form-label">名称</label>\n' +
+        '            <div class="layui-input-block">\n' +
+        '                <input type="text" name="name" required lay-verify="required" placeholder="请输入所有者的名称" autocomplete="off" class="layui-input" value="' + nameValue + '">\n' +
+        '            </div>\n' +
+        '        </div>\n' +
+        '        <div class="layui-form-item">\n' +
+        '            <label class="layui-form-label">电话</label>\n' +
+        '            <div class="layui-input-block">\n' +
+        '                <input type="tel" name="phoneNumber" placeholder="请输入所有者的电话" autocomplete="off" class="layui-input" value="' + phoneNumberValue + '">\n' +
+        '            </div>\n' +
+        '        </div>\n' +
+        '        <div class="layui-form-item layui-form-text">\n' +
+        '            <label class="layui-form-label">&nbsp;备注</label>\n' +
+        '            <div class="layui-input-block">\n' +
+        '                <textarea name="note" placeholder="请输入所有者的备注" class="layui-textarea" >' + noteValue + '</textarea>\n' +
+        '            </div>\n' +
+        '        </div>\n' +
+        '        <div class="layui-form-item layui-hide">\n' +
+        '            <button class="layui-btn" lay-submit lay-filter="form-editOwner-submit" id="form-editOwner-submit">\n' +
+        '                立即提交\n' +
+        '            </button>\n' +
+        '        </div>\n' +
+        '    </form>\n' +
+        '</div>';
+    layer.open({
+        type: 1
+        , title: '修改所有者信息'
+        , content: formContainer
+        , area: ['800px', '400px']
+        , shadeClose: true
+        , resize: false
+        , fixed: true
+        , closeBtn: 0
+        , btn: ['确定', '返回']
+        , yes: function (index, layero) {
+            document.getElementById('form-editOwner-submit').click();
+            return false;
+        }
     });
 }
 

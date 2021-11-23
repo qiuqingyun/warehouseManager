@@ -380,7 +380,8 @@
                                         <div class="layui-col-md12">
                                             <label class="layui-form-label">所有者电话</label>
                                             <div class="layui-input-block">
-                                                <input type="tel" name="phoneNumber" placeholder="请输入所有者的电话" autocomplete="off"
+                                                <input type="tel" name="phoneNumber" placeholder="请输入所有者的电话"
+                                                       autocomplete="off"
                                                        class="layui-input">
                                             </div>
                                         </div>
@@ -483,6 +484,33 @@
             </div>
         </div>
     </div>
+</div>
+<div class="content-container layui-hide">
+    <form class="layui-form layui-form-pane" id="form-editOwner" lay-filter="form-editOwner">
+        <div class="layui-form-item">
+            <label class="layui-form-label">名称</label>
+            <div class="layui-input-block">
+                <input type="text" name="name" required lay-verify="required" placeholder="请输入所有者的名称" autocomplete="off" class="layui-input">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">电话</label>
+            <div class="layui-input-block">
+                <input type="tel" name="phoneNumber" placeholder="请输入所有者的电话" autocomplete="off" class="layui-input">
+            </div>
+        </div>
+        <div class="layui-form-item layui-form-text">
+            <label class="layui-form-label">&nbsp;备注</label>
+            <div class="layui-input-block">
+                <textarea name="note" placeholder="请输入所有者的备注" class="layui-textarea"></textarea>
+            </div>
+        </div>
+        <div class="layui-form-item layui-hide">
+            <button class="layui-btn" lay-submit lay-filter="form-editOwner-submit">
+                立即提交
+            </button>
+        </div>
+    </form>
 </div>
 </body>
 </html>

@@ -1,3 +1,41 @@
+.login-container {
+    position: absolute;
+    height: 100%;
+    width: 100%;
+}
+
+.layui-panel.login-container {
+    position: relative;
+    width: 300px;
+    height: 400px;
+    margin: 0 auto;
+    padding: 50px;
+    border-radius: 20px;
+    box-shadow: 0px 10px 34px -15px rgb(0 0 0 / 24%);
+    top: 50%;
+    transform: translateY(-60%);
+}
+
+p.login-title {
+    text-align: center;
+    font-size: 30px;
+    margin-bottom: 35px;
+}
+
+.icon {
+    text-align: center;
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 20px auto;
+    background: #009688;
+    border-radius: 50%;
+}
+
+.login-container .layui-form-item {
+    margin-top: 20px;
+}
+
+
 li.layui-nav-item a {
     font-size: 16px;
     text-align: center;
@@ -102,7 +140,7 @@ form#form-owner-create {
 
 .chartLine-container {
     margin-top: 20px;
-    min-width: 900px;
+    min-width: 863px;
 }
 
 .chartPie-container {

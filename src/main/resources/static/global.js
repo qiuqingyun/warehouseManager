@@ -1,3 +1,4 @@
+const container = document.getElementById('container');
 const itemInfoKeys = ["name", "uuid", "status", "ownerId", "dateRecord", "dateInto", "dateLeave", "description", "length", "width", "height", "architecture"];
 const itemInfoNames = ["物品名称", "物品编号", "物品状态", "所有者", "登记时间", "入库时间", "出库时间", "物品描述", "尺寸：长", "尺寸：宽", "尺寸：高", "物品架构"];
 const itemInfoButtons = [[['物品入库', '添加所有者', '返回'], ['物品入库', '返回']], [['物品出库', '添加所有者', '返回'], ['物品出库', '返回']], [['返回'], ['返回']]];
@@ -41,7 +42,8 @@ let chartLine;
 let chartPie;
 let ownerEditId;
 let ownerEditDateRegistration;
-window.onload = function () {
+
+function onloadMain() {
     renderTableFilterItem();
     renderTableFilterOwner();
     //渲染时间选择控件
@@ -137,8 +139,8 @@ window.onload = function () {
     form.on('submit(form-editOwner-submit)', function (data) {
         layer.confirm('确定修改所有者的信息？', function () {
             console.log(data.field)
-            data.field['id']=ownerEditId;
-            data.field['dateRegistration']=ownerEditDateRegistration;
+            data.field['id'] = ownerEditId;
+            data.field['dateRegistration'] = ownerEditDateRegistration;
             console.log(data.field)
             editOwner(data.field).then((e) => {
                 layer.closeAll();
@@ -274,6 +276,9 @@ window.onload = function () {
     setInterval(getQuantity, 5000);
 }
 
+function onloadLogin(){
+
+}
 //提交新物品
 async function submitItem(submit) {
     let data = submit.field;

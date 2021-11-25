@@ -1,10 +1,8 @@
 package com.qing98.warehouseManager.entity;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
-import com.qing98.warehouseManager.Config;
+import com.qing98.warehouseManager.config.Config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.format.annotation.DateTimeFormat;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;

@@ -1,6 +1,6 @@
 package com.qing98.warehouseManager.entity;
 
-import com.qing98.warehouseManager.Config;
+import com.qing98.warehouseManager.config.Config;
 import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.Type;
 import org.slf4j.Logger;

@@ -2,7 +2,7 @@ package com.qing98.warehouseManager.controller;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.qing98.warehouseManager.Config;
+import com.qing98.warehouseManager.config.Config;
 import com.qing98.warehouseManager.entity.Item;
 import com.qing98.warehouseManager.entity.Owner;
 import com.qing98.warehouseManager.repository.ItemRepository;
@@ -37,6 +37,12 @@ public class WarehouseController {
         this.ownerRepository = ownerRepository;
         this.itemRepository = itemRepository;
     }
+
+    // @PostMapping(path = "/signOut")
+    // public ResponseEntity<String> addNewOwner(@RequestBody Owner owner){
+    //
+    // }
+
 
     /**
      * 添加新的所有者信息

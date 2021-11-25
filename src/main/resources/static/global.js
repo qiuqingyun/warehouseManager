@@ -276,9 +276,11 @@ function onloadMain() {
     setInterval(getQuantity, 5000);
 }
 
-function onloadLogin(){
-
+async function logout() {
+    await getData('/logout');
+    window.location.reload();
 }
+
 //提交新物品
 async function submitItem(submit) {
     let data = submit.field;
@@ -303,98 +305,101 @@ async function submitItem(submit) {
 
 //获取物品数量
 async function getQuantity() {
-    let data = JSON.parse(await getData('/item/get/quantity?limit=30'));
-    // console.log(data);
-    let last = data.orders.length - 1;
-    document.getElementById('overview-count-all').innerText = data.orders[last] + data.keeps[last] + data.exports[last];
-    document.getElementById('overview-count-order').innerText = data.orders[last];
-    document.getElementById('overview-count-keep').innerText = data.keeps[last];
-    document.getElementById('overview-count-export').innerText = data.exports[last];
-    let chartLineOption = {
-        tooltip: {
-            trigger: 'axis',
-            formatter: function (params) {
-                let orders = params[0].data;
-                let keeps = params[1].data;
-                let exports = params[2].data;
-                let all = orders + keeps + exports;
-                let date = new Date(params[0].axisValue);
-                return date.getFullYear() + '年' + (date.getMonth() + 1) + '月' + date.getDate() + '日 '
-                    + '<br/>订购中的:&nbsp;&nbsp;' + orders
-                    + '<br/>库存中的:&nbsp;&nbsp;' + keeps
-                    + '<br/>已出库的:&nbsp;&nbsp;' + exports
-                    + '<br/>物品总数:&nbsp;&nbsp;' + all;
-            }
-        },
-        xAxis: {
-            boundaryGap: false,
-            data: data.dateTimes
-        },
-        yAxis: {
-            min: 1
-        },
-        legend: {
-            data: ['订购中的', '库存中的', '已出库的']
-        },
-        series: [
-            {
-                name: '订购中的',
-                data: data.orders,
-                type: 'line',
-                stack: 'x',
-                areaStyle: {}
+    try {
+        let data = JSON.parse(await getData('/item/get/quantity?limit=30'));
+        let last = data.orders.length - 1;
+        document.getElementById('overview-count-all').innerText = data.orders[last] + data.keeps[last] + data.exports[last];
+        document.getElementById('overview-count-order').innerText = data.orders[last];
+        document.getElementById('overview-count-keep').innerText = data.keeps[last];
+        document.getElementById('overview-count-export').innerText = data.exports[last];
+        let chartLineOption = {
+            tooltip: {
+                trigger: 'axis',
+                formatter: function (params) {
+                    let orders = params[0].data;
+                    let keeps = params[1].data;
+                    let exports = params[2].data;
+                    let all = orders + keeps + exports;
+                    let date = new Date(params[0].axisValue);
+                    return date.getFullYear() + '年' + (date.getMonth() + 1) + '月' + date.getDate() + '日 '
+                        + '<br/>订购中的:&nbsp;&nbsp;' + orders
+                        + '<br/>库存中的:&nbsp;&nbsp;' + keeps
+                        + '<br/>已出库的:&nbsp;&nbsp;' + exports
+                        + '<br/>物品总数:&nbsp;&nbsp;' + all;
+                }
             },
-            {
-                name: '库存中的',
-                data: data.keeps,
-                type: 'line',
-                stack: 'x',
-                areaStyle: {}
+            xAxis: {
+                boundaryGap: false,
+                data: data.dateTimes
             },
-            {
-                name: '已出库的',
-                data: data.exports,
-                type: 'line',
-                stack: 'x',
-                areaStyle: {}
-            }
-        ]
-    };
-    let chartPieOption = {
-        tooltip: {
-            trigger: 'item',
-            formatter: function (params) {
-                return params.data.name + '：' + params.data.value + '， 占比：' + params.percent + ' %';
-            }
-        },
-        legend: {
-            data: ['订购中的', '库存中的', '已出库的']
-        },
-        series: [
-            {
-                type: 'pie',
-                label: {
-                    show: false
+            yAxis: {
+                min: 1
+            },
+            legend: {
+                data: ['订购中的', '库存中的', '已出库的']
+            },
+            series: [
+                {
+                    name: '已出库的',
+                    data: data.exports,
+                    type: 'line',
+                    stack: 'x',
+                    areaStyle: {}
                 },
-                data: [
-                    {
-                        value: data.orders[last],
-                        name: '订购中的'
+                {
+                    name: '库存中的',
+                    data: data.keeps,
+                    type: 'line',
+                    stack: 'x',
+                    areaStyle: {}
+                },
+                {
+                    name: '订购中的',
+                    data: data.orders,
+                    type: 'line',
+                    stack: 'x',
+                    areaStyle: {}
+                }
+            ]
+        };
+        let chartPieOption = {
+            tooltip: {
+                trigger: 'item',
+                formatter: function (params) {
+                    return params.data.name + '：' + params.data.value + '， 占比：' + params.percent + ' %';
+                }
+            },
+            legend: {
+                data: ['订购中的', '库存中的', '已出库的']
+            },
+            series: [
+                {
+                    type: 'pie',
+                    label: {
+                        show: false
                     },
-                    {
-                        value: data.keeps[last],
-                        name: '库存中的'
-                    },
-                    {
-                        value: data.exports[last],
-                        name: '已出库的'
-                    }
-                ]
-            }
-        ]
-    };
-    chartLine.setOption(chartLineOption);
-    chartPie.setOption(chartPieOption);
+                    data: [
+                        {
+                            value: data.exports[last],
+                            name: '已出库的'
+                        },
+                        {
+                            value: data.keeps[last],
+                            name: '库存中的'
+                        },
+                        {
+                            value: data.orders[last],
+                            name: '订购中的'
+                        }
+                    ]
+                }
+            ]
+        };
+        chartLine.setOption(chartLineOption);
+        chartPie.setOption(chartPieOption);
+    } catch (e) {
+        window.location.reload();
+    }
 }
 
 //渲染物品表格

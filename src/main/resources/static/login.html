@@ -4,11 +4,45 @@
     <meta charset="UTF-8">
     <title>登录</title>
     <link rel="stylesheet" type="text/css" href="https://www.layuicdn.com/layui-v2.6.8/css/layui.css"/>
-    <link rel="stylesheet" href="global.css">
-    <script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
     <script src="https://www.layuicdn.com/layui-v2.6.8/layui.js"></script>
-    <script src="https://cdn.bootcdn.net/ajax/libs/echarts/5.1.2/echarts.common.min.js"></script>
-    <script src="global.js"></script>
+    <style>
+        .login-container {
+            position: absolute;
+            height: 100%;
+            width: 100%;
+        }
+
+        .layui-panel.login-container {
+            position: relative;
+            width: 300px;
+            height: 400px;
+            margin: 0 auto;
+            padding: 50px;
+            border-radius: 20px;
+            box-shadow: 0px 10px 34px -15px rgb(0 0 0 / 24%);
+            top: 50%;
+            transform: translateY(-60%);
+        }
+
+        p.login-title {
+            text-align: center;
+            font-size: 30px;
+            margin-bottom: 35px;
+        }
+
+        .icon {
+            text-align: center;
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 20px auto;
+            background: #009688;
+            border-radius: 50%;
+        }
+
+        .login-container .layui-form-item {
+            margin-top: 20px;
+        }
+    </style>
 </head>
 <body>
 <div class="login-container" style="background: #f8f9fd;">
@@ -20,9 +54,9 @@
             <p class="login-title">系统登录</p>
         </div>
         <div class="form">
-            <form class="layui-form" action="">
+            <form class="layui-form" action="/login.html" method="post">
                 <div class="layui-form-item">
-                    <input type="text" name="userName" required lay-verify="required" placeholder="请输入用户名"
+                    <input type="text" name="username" required lay-verify="required" placeholder="请输入用户名"
                            autocomplete="off" class="layui-input">
                 </div>
                 <div class="layui-form-item">
@@ -30,7 +64,7 @@
                            autocomplete="off" class="layui-input">
                 </div>
                 <div class="layui-form-item">
-                    <button class="layui-btn layui-btn-fluid" lay-submit lay-filter="formDemo">登录</button>
+                    <button class="layui-btn layui-btn-fluid" lay-submit lay-filter="formLogin">登录</button>
                 </div>
                 <div class="layui-form-item">
                     <input type="checkbox" name="remember" title="7天免登录" lay-skin="primary" checked>
@@ -39,8 +73,6 @@
         </div>
     </div>
 </div>
-<script>
-    window.onload = onloadLogin;
-</script>
+
 </body>
 </html>

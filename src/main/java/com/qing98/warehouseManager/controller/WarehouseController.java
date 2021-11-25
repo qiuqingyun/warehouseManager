@@ -1,6 +1,7 @@
 package com.qing98.warehouseManager.controller;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.qing98.warehouseManager.config.Config;
 import com.qing98.warehouseManager.entity.Item;
@@ -14,9 +15,12 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
@@ -38,11 +42,15 @@ public class WarehouseController {
         this.itemRepository = itemRepository;
     }
 
-    // @PostMapping(path = "/signOut")
-    // public ResponseEntity<String> addNewOwner(@RequestBody Owner owner){
-    //
-    // }
-
+    /**
+     * 获取登录用户的用户名
+     * @param principal 登录用户的信息
+     * @return 登录用户的用户名
+     */
+    @GetMapping(path = "/principal")
+    public ResponseEntity<String> getPrincipal(Principal principal) {
+        return new Response().success(principal);
+    }
 
     /**
      * 添加新的所有者信息
@@ -860,6 +868,7 @@ public class WarehouseController {
             this.exports = exports;
         }
     }
+    
 }
 
 

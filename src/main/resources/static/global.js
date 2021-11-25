@@ -1,4 +1,3 @@
-const container = document.getElementById('container');
 const itemInfoKeys = ["name", "uuid", "status", "ownerId", "dateRecord", "dateInto", "dateLeave", "description", "length", "width", "height", "architecture"];
 const itemInfoNames = ["物品名称", "物品编号", "物品状态", "所有者", "登记时间", "入库时间", "出库时间", "物品描述", "尺寸：长", "尺寸：宽", "尺寸：高", "物品架构"];
 const itemInfoButtons = [[['物品入库', '添加所有者', '返回'], ['物品入库', '返回']], [['物品出库', '添加所有者', '返回'], ['物品出库', '返回']], [['返回'], ['返回']]];
@@ -42,8 +41,10 @@ let chartLine;
 let chartPie;
 let ownerEditId;
 let ownerEditDateRegistration;
+let getQuantityId;
 
 function onloadMain() {
+    loadAccountInfo();
     renderTableFilterItem();
     renderTableFilterOwner();
     //渲染时间选择控件
@@ -273,12 +274,26 @@ function onloadMain() {
     chartLine = echarts.init(document.getElementById('chartLine'));
     chartPie = echarts.init(document.getElementById('chartPie'));
     getQuantity();
-    setInterval(getQuantity, 5000);
+    getQuantityId = setInterval(getQuantity, 5000);
 }
 
+//登出
 async function logout() {
-    await getData('/logout');
-    window.location.reload();
+    let response = await getData('/logout');
+    if (response.result) {
+        clearInterval(getQuantityId);
+        layer.msg('注销成功，即将返回登录界面', {icon: 0}, function () {
+            window.location.replace("/login.html");
+        });
+    }
+}
+
+//加载账户信息
+async function loadAccountInfo() {
+    let principal = JSON.parse(await getData('/principal'));
+    let arrow = document.getElementById('main-user-name-show').firstElementChild.outerHTML;
+    document.getElementById('main-user-name-show').innerHTML = principal.name + arrow;
+    console.log(principal);
 }
 
 //提交新物品
@@ -854,6 +869,7 @@ function getData(url) {
         , type: 'GET'
         , error: function (e) {
             alert("错误：" + e.responseJSON.error);
+            window.location.reload();
         }
     });
 }
@@ -868,6 +884,7 @@ function postData(url, jsonData) {
         , dataType: 'json'
         , error: function (e) {
             alert("错误：" + e.responseJSON.error);
+            window.location.reload();
         }
     });
 }

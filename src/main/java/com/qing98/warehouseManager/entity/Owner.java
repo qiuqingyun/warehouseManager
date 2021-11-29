@@ -13,13 +13,31 @@ import java.time.LocalDateTime;
 @Entity
 public class Owner {
     private final static Logger logger = LoggerFactory.getLogger(Owner.class.getName());
+    /**
+     * 所有者编号
+     */
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+    /**
+     * 所有者名称
+     */
     private String name;
+    /**
+     * 所有者电话号码
+     */
     private String phoneNumber;
+    /**
+     * 所有者备注
+     */
     private String note;
+    /**
+     * 所有者注册时间
+     */
     private LocalDateTime dateRegistration;
+    /**
+     * 所有者信息最后修改的时间
+     */
     private LocalDateTime dateLastChange;
 
     protected Owner() {

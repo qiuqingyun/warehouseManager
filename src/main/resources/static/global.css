@@ -3,6 +3,28 @@ a#main-user-name-show {
     padding-left: 40px;
 }
 
+#window-account-info tr td:first-child {
+    width: 60px;
+}
+
+#window-account-info tr td:nth-child(2) {
+    width: 400px;
+}
+
+#window-account-password-change .layui-form-item .layui-input-inline {
+    width: 380px;
+    margin: 0;
+}
+
+#window-account-password-change  label.layui-form-label {
+    width: 60px;
+    padding-left: 10px;
+}
+
+#window-account-password-change {
+    padding-top: 30px;
+}
+
 li.layui-nav-item a {
     font-size: 16px;
     text-align: center;
@@ -33,11 +55,11 @@ li.layui-nav-item a {
     cursor: pointer;
 }
 
-#form-filterItem-search-row,#form-filterOwner-search-row {
+#form-filterItem-search-row, #form-filterOwner-search-row {
     position: relative;
 }
 
-#form-filterItem-submit,#form-filterOwner-submit {
+#form-filterItem-submit, #form-filterOwner-submit {
     position: absolute;
     top: 0;
     right: 0;
@@ -49,7 +71,7 @@ li.layui-nav-item a {
     padding-right: 54px;
 }
 
-#form-filterItem-input-range-start, #form-filterItem-date-select-range-start,#form-filterOwner-input-range-start, #form-filterOwner-date-select-range-start {
+#form-filterItem-input-range-start, #form-filterItem-date-select-range-start, #form-filterOwner-input-range-start, #form-filterOwner-date-select-range-start {
     border: none;
     padding-right: 54px;
 }
@@ -59,7 +81,7 @@ li.layui-nav-item a {
 }
 
 #form-filterItem-input-range-start, #form-filterItem-input-range-end, #form-filterItem-date-select-range-start, #form-filterItem-date-select-range-end,
-#form-filterOwner-input-range-start, #form-filterOwner-input-range-end, #form-filterOwner-date-select-range-start, #form-filterOwner-date-select-range-end{
+#form-filterOwner-input-range-start, #form-filterOwner-input-range-end, #form-filterOwner-date-select-range-start, #form-filterOwner-date-select-range-end {
     height: 36px;
 }
 
@@ -114,13 +136,16 @@ form#form-owner-create {
     margin-top: 20px;
     min-width: 500px;
 }
+
 #chartLine, #chartPie {
     height: 400px;
     margin: 40px auto 0 auto;
 }
+
 #chartLine {
     width: 800px;
 }
+
 #chartPie {
     width: 400px;
 }

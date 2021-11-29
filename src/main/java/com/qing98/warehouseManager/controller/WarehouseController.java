@@ -1,13 +1,14 @@
 package com.qing98.warehouseManager.controller;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.qing98.warehouseManager.config.Config;
 import com.qing98.warehouseManager.entity.Item;
 import com.qing98.warehouseManager.entity.Owner;
+import com.qing98.warehouseManager.entity.User;
 import com.qing98.warehouseManager.repository.ItemRepository;
 import com.qing98.warehouseManager.repository.OwnerRepository;
+import com.qing98.warehouseManager.repository.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageRequest;
@@ -15,8 +16,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
@@ -36,20 +36,41 @@ public class WarehouseController {
 
     private final OwnerRepository ownerRepository;
     private final ItemRepository itemRepository;
+    private final UserRepository userRepository;
 
-    public WarehouseController(OwnerRepository ownerRepository, ItemRepository itemRepository) {
+    public WarehouseController(OwnerRepository ownerRepository, ItemRepository itemRepository, UserRepository userRepository) {
         this.ownerRepository = ownerRepository;
         this.itemRepository = itemRepository;
+        this.userRepository = userRepository;
     }
 
     /**
-     * 获取登录用户的用户名
+     * 获取登录用户的信息
+     *
      * @param principal 登录用户的信息
-     * @return 登录用户的用户名
+     * @return 登录用户的信息
      */
     @GetMapping(path = "/principal")
     public ResponseEntity<String> getPrincipal(Principal principal) {
-        return new Response().success(principal);
+        User user = userRepository.findUserByUsername(principal.getName());
+        user.setPassword("");
+        return new Response().success(user);
+    }
+
+    @PostMapping(path = "/changePassword")
+    public ResponseEntity<String> changePassword(@RequestBody ChangePassword changePassword, Principal principal) {
+        User user = userRepository.findUserByUsername(principal.getName());
+        BCryptPasswordEncoder bCryptPasswordEncoder = new BCryptPasswordEncoder();
+        boolean result = bCryptPasswordEncoder.matches(changePassword.passwordOld, user.getPassword());
+        ChangePasswordResult changePasswordResult = new ChangePasswordResult(result);
+        if (result) {
+            user.setPassword(bCryptPasswordEncoder.encode(changePassword.passwordNew));
+            userRepository.save(user);
+            logger.info("Password changed");
+        } else {
+            logger.warn("Password change failed: old password not match");
+        }
+        return new Response().success(changePasswordResult);
     }
 
     /**
@@ -237,7 +258,6 @@ public class WarehouseController {
         }
     }
 
-
     /**
      * 添加新的物品的元数据
      *
@@ -311,7 +331,6 @@ public class WarehouseController {
         }
         return new Response().badRequest();
     }
-
 
     /**
      * 物品状态变更
@@ -780,13 +799,14 @@ public class WarehouseController {
     }
 
     class Response {
+
         public ResponseEntity<String> success(Object object) {
             try {
                 return new ResponseEntity<>(mapper.writeValueAsString(object), HttpStatus.OK);
             } catch (JsonProcessingException e) {
                 logger.warn("Parse json failed: " + e);
                 e.printStackTrace();
-                return error(e.getMessage());
+                return error();
             }
         }
 
@@ -798,7 +818,7 @@ public class WarehouseController {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
 
-        public ResponseEntity<String> error(String error) {
+        public ResponseEntity<String> error() {
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
@@ -868,7 +888,19 @@ public class WarehouseController {
             this.exports = exports;
         }
     }
-    
+
+    static class ChangePassword {
+        public String passwordOld;
+        public String passwordNew;
+    }
+
+    static class ChangePasswordResult {
+        public boolean result;
+
+        public ChangePasswordResult(boolean result) {
+            this.result = result;
+        }
+    }
 }
 
 

@@ -104,6 +104,9 @@ public class Item {
      * 物品描述
      */
     private String description;
+    /**
+     * 物品信息最后修改的时间
+     */
     private LocalDateTime dateLastChange;
 
     /**

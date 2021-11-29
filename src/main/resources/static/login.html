@@ -67,7 +67,7 @@
                 <button class="layui-btn layui-btn-fluid" lay-submit lay-filter="formLogin">登录</button>
             </div>
             <div class="layui-form-item">
-                <input type="checkbox" name="remember" title="记住我" lay-skin="primary" checked>
+                <input type="checkbox" name="remember" title="记住我" lay-skin="primary">
             </div>
         </div>
     </div>
@@ -86,11 +86,15 @@
                 , error: function (e) {
                     layer.msg(e.responseText, {icon: 2});
                 }
-                , success: function (e) {
-                    window.location.replace("/");
+                , success: function (response) {
+                    if (response.result) {
+                        window.location.replace("/");
+                    }else{
+                        layer.msg('登录失败', {icon: 2});
+                    }
+                    return false;
                 }
             })
-            return false;
         });
     });
 </script>

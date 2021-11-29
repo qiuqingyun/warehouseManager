@@ -1,6 +1,6 @@
 const itemInfoKeys = ["name", "uuid", "status", "ownerId", "dateRecord", "dateInto", "dateLeave", "description", "length", "width", "height", "architecture"];
 const itemInfoNames = ["物品名称", "物品编号", "物品状态", "所有者", "登记时间", "入库时间", "出库时间", "物品描述", "尺寸：长", "尺寸：宽", "尺寸：高", "物品架构"];
-const itemInfoButtons = [[['物品入库', '添加所有者', '返回'], ['物品入库', '返回']], [['物品出库', '添加所有者', '返回'], ['物品出库', '返回']], [['返回'], ['返回']]];
+const itemInfoButtons = [['编辑', '物品入库', '返回'], ['编辑', '物品出库', '返回'], ['编辑', '返回']];
 const itemMoveConfirms = ['确定将物品入库？', '确定将物品出库？', '错误'];
 const ownerInfoKeys = ["name", "id", "phoneNumber", "dateRegistration", "note"];
 const ownerInfoNames = ["名称", "编号", "电话号码", "注册时间", "备注"];
@@ -42,6 +42,7 @@ let chartPie;
 let ownerEditId;
 let ownerEditDateRegistration;
 let getQuantityId;
+let editItemFlag = false;
 
 function onloadMain() {
     loadAccountInfo();
@@ -130,6 +131,23 @@ function onloadMain() {
         createOwnerFlag = true;
         return false;
     });
+    form.on('submit(form-editItem-submit)', function (data) {
+        layer.confirm('确定修改物品的信息？', function () {
+            if (data.field.status === '订购中') {
+                data.field.status = 'order';
+            } else if (data.field.status === '库存中') {
+                data.field.status = 'keep';
+            } else if (data.field.status === '已出库') {
+                data.field.status = 'export';
+            }
+            data.field.ownerId = ownerChosen;
+            editItem(data.field).then((e) => {
+                layer.closeAll();
+                itemInfoShow(data.field.uuid);
+            });
+        });
+        return false;
+    });
     form.on('submit(form-addOwner-submit)', function (submit) {
         createNewOwner(submit.field).then(() => {
             layui.layer.msg('提交成功', {icon: 1});
@@ -140,13 +158,23 @@ function onloadMain() {
     form.on('submit(form-editOwner-submit)', function (data) {
         layer.confirm('确定修改所有者的信息？', function () {
             console.log(data.field)
-            data.field['id'] = ownerEditId;
-            data.field['dateRegistration'] = ownerEditDateRegistration;
-            console.log(data.field)
             editOwner(data.field).then((e) => {
                 layer.closeAll();
-                ownerInfoShow(ownerEditId);
+                ownerInfoShow(data.field.id);
             });
+        });
+        return false;
+    });
+    form.on('submit(form-account-password-change-submit)', function (data) {
+        let json = {'passwordOld': data.field.passwordOld, 'passwordNew': data.field.passwordNew};
+        changePassword(json).then((response) => {
+            if (response.result) {
+                layer.msg('密码修改成功', {icon: 1}, function () {
+                    layer.closeAll();
+                });
+            } else {
+                layer.msg('密码修改失败，初始密码不匹配', {icon: 2});
+            }
         });
         return false;
     });
@@ -270,6 +298,13 @@ function onloadMain() {
                 }
             }
         }
+        , pass: function (value, item) { //value：表单的值、item：表单的DOM对象
+            let passwordNew = document.getElementById('passwordNew').value;
+            let passwordRepeat = document.getElementById('passwordRepeat').value;
+            if (passwordNew !== passwordRepeat) {
+                return '密码不一致';
+            }
+        }
     });
     chartLine = echarts.init(document.getElementById('chartLine'));
     chartPie = echarts.init(document.getElementById('chartPie'));
@@ -292,8 +327,100 @@ async function logout() {
 async function loadAccountInfo() {
     let principal = JSON.parse(await getData('/principal'));
     let arrow = document.getElementById('main-user-name-show').firstElementChild.outerHTML;
-    document.getElementById('main-user-name-show').innerHTML = principal.name + arrow;
-    console.log(principal);
+    document.getElementById('main-user-name-show').innerHTML = principal.username + arrow;
+}
+
+//用户信息展示弹窗
+async function accountInfoShow() {
+    let principal = JSON.parse(await getData('/principal'));
+    let tableContainer = '<div class="content-container" id="window-account-info">\n' +
+        '    <table class="layui-table" >\n' +
+        '        <tbody>\n' +
+        '        <tr>\n' +
+        '            <td>用户名称</td>\n' +
+        '            <td id="account-info-username">' + principal.username + '</td>\n' +
+        '        </tr>\n' +
+        '        <tr>\n' +
+        '            <td>用户编号</td>\n' +
+        '            <td id="account-info-id">' + principal.id + '</td>\n' +
+        '        </tr>\n' +
+        '        <tr>\n' +
+        '            <td>用户身份</td>\n' +
+        '            <td id="account-info-roles">' + principal.role.name + '</td>\n' +
+        '        </tr>\n' +
+        '        </tbody>\n' +
+        '    </table>\n' +
+        '</div>';
+    layer.open({
+        type: 1
+        , title: '用户信息'
+        , content: tableContainer
+        , area: ['600px', '400px']
+        , shadeClose: true
+        , resize: false
+        , fixed: true
+        , btn: ['修改密码', '返回']
+        , closeBtn: 0
+        , yes: function () {
+            accountPasswordChangeShow();
+            return false;
+        }
+    });
+}
+
+//修改密码弹窗
+async function accountPasswordChangeShow() {
+    let formContainer = '<div class="content-container" id="window-account-password-change">\n' +
+        '    <div class="layui-form">\n' +
+        '        <div class="layui-form-item">\n' +
+        '            <label class="layui-form-label">初始密码</label>\n' +
+        '            <div class="layui-input-inline">\n' +
+        '                <input type="password" name="passwordOld" required lay-verify="required" placeholder="请输入初始密码"\n' +
+        '                       autocomplete="off" class="layui-input">\n' +
+        '            </div>\n' +
+        '        </div>\n' +
+        '        <br>\n' +
+        '        <div class="layui-form-item">\n' +
+        '            <label class="layui-form-label">新的密码</label>\n' +
+        '            <div class="layui-input-inline">\n' +
+        '                <input type="password" name="passwordNew" required lay-verify="required" placeholder="请输入新的密码"\n' +
+        '                       autocomplete="off" class="layui-input" id="passwordNew">\n' +
+        '            </div>\n' +
+        '        </div>\n' +
+        '        <div class="layui-form-item">\n' +
+        '            <label class="layui-form-label">重复密码</label>\n' +
+        '            <div class="layui-input-inline">\n' +
+        '                <input type="password" name="passwordRepeat" required lay-verify="required|pass" placeholder="请再次输入新的密码"\n' +
+        '                       autocomplete="off" class="layui-input" id="passwordRepeat">\n' +
+        '            </div>\n' +
+        '        </div>\n' +
+        '        <div class="layui-form-item layui-hide">\n' +
+        '            <div class="layui-input-block">\n' +
+        '                <button class="layui-btn" lay-submit lay-filter="form-account-password-change-submit" id="formAccountPasswordChange">立即提交</button>\n' +
+        '            </div>\n' +
+        '        </div>\n' +
+        '    </div>\n' +
+        '</div>';
+    layer.open({
+        type: 1
+        , title: '修改密码'
+        , content: formContainer
+        , area: ['500px', '350px']
+        , shadeClose: true
+        , resize: false
+        , fixed: true
+        , btn: ['修改', '返回']
+        , closeBtn: 0
+        , yes: function () {
+            document.getElementById('formAccountPasswordChange').click();
+            return false;
+        }
+    });
+}
+
+//修改密码
+async function changePassword(data) {
+    return await postData('/changePassword', data);
 }
 
 //提交新物品
@@ -531,11 +658,9 @@ function renderTableFilterOwner(condition, word, word2) {
 async function itemInfoShow(uuid) {
     let itemInfo = JSON.parse(await getData('/item/get?uuid=' + uuid));
     let ownerId = itemInfo.ownerId;
-    let ownerName = '无';
-    let ownerNewFlag = 0;
+    let ownerName = '';
     if (ownerId != null) {
         ownerName = JSON.parse(await getData('/owner/get?id=' + ownerId)).name;
-        ownerNewFlag = 1;
     }
     let table = '<table class="layui-table">';
     for (let i = 0; i < itemInfoKeys.length; i++) {
@@ -552,7 +677,7 @@ async function itemInfoShow(uuid) {
         } else if (infoValue === 'order') {
             infoValue = '订购中';
         } else if (infoValue === 'keep') {
-            infoValue = '在库中';
+            infoValue = '库存中';
         } else if (infoValue === 'export') {
             infoValue = '已出库';
         }
@@ -573,20 +698,25 @@ async function itemInfoShow(uuid) {
     } else if (itemInfo.status === 'export') {
         status = 2;
     }
-    let buttonsCount = itemInfoButtons[status][ownerNewFlag].length;
-    let infoLayer = layer.open({
+    let buttonsCount = itemInfoButtons[status].length;
+    layer.open({
         type: 1
         , title: '物品信息'
         , content: tableContainer
-        , area: ['800px', '600px']
+        , area: ['800px', '650px']
         , shadeClose: true
         , resize: false
         , fixed: true
-        , btn: itemInfoButtons[status][ownerNewFlag]
+        , btn: itemInfoButtons[status]
         , closeBtn: 0
-        //入库及出库按钮
+        //编辑物品信息
         , yes: function (index, layero) {
-            if (buttonsCount > 1) {
+            editItemInfoShow(itemInfo, ownerName);
+            return false;
+        }
+        //入库及出库按钮,或者返回按钮
+        , btn2: function (index, layero) {
+            if (buttonsCount > 2) {
                 //入库及出库按钮
                 if (itemInfo.status === 'keep' && ownerId === null) {
                     //防止在没有所有者的情况下出库
@@ -599,19 +729,144 @@ async function itemInfoShow(uuid) {
                 }
                 return false;
             } else {
-                layer.close(infoLayer);
-            }
-        }
-        //添加所有者按钮
-        , btn2: function (index, layero) {
-            if (buttonsCount > 2) {
-                ownerListShow(uuid);
-                return false;
-            } else {
-                layer.close(infoLayer);
+                //返回按钮
+                layer.closeAll();
             }
         }
     });
+}
+
+//显示修改所有者信息弹窗
+function editItemInfoShow(itemInfo, ownerName) {
+    console.log(itemInfo);
+    let statusName = '订购中';
+    if (itemInfo.status === 'keep') {
+        statusName = '库存中';
+    } else if (itemInfo.status === 'export') {
+        statusName = '已出库';
+    }
+    let formContainer = '<form class="layui-form layui-form-pane" id="form-editItem"\n' +
+        '      style="margin: 8px auto auto;width: 800px;">\n' +
+        '    <div class="layui-form-item">\n' +
+        '        <label class="layui-form-label">物品名称</label>\n' +
+        '        <div class="layui-input-block">\n' +
+        '            <input type="text" name="name" value="' + itemInfo.name + '" required lay-verify="required" placeholder="请输入物品名称" class="layui-input" autocomplete="off" >\n' +
+        '        </div>\n' +
+        '    </div>\n' +
+        '    <div class="layui-form-item">\n' +
+        '        <label class="layui-form-label">物品编号</label>\n' +
+        '        <div class="layui-input-block">\n' +
+        '            <input type="text" name="uuid" value="' + itemInfo.uuid + '" required lay-verify="required" class="layui-input" autocomplete="off" readonly style="cursor: not-allowed; ">\n' +
+        '        </div>\n' +
+        '    </div>\n' +
+        '    <div class="layui-form-item">\n' +
+        '        <label class="layui-form-label">物品状态</label>\n' +
+        '        <div class="layui-input-block">\n' +
+        '            <input type="text" name="status" value="' + statusName + '" required lay-verify="required" class="layui-input" autocomplete="off" readonly style="cursor: not-allowed; ">\n' +
+        '        </div>\n' +
+        '    </div>\n' +
+        '    <div class="layui-form-item">\n' +
+        '        <label class="layui-form-label">物品所有者</label>\n' +
+        '        <div class="layui-input-block">\n' +
+        '            <input type="text" name="ownerId" value="' + ownerName + '" placeholder="点击选择物品所有者" onclick="ownerListShow()" id="edit-owner-input" class="layui-input pointer" readonly autocomplete="off" >\n' +
+        '        </div>\n' +
+        '    </div>\n' +
+        '    <div class="layui-form-item">\n' +
+        '        <label class="layui-form-label">登记时间</label>\n' +
+        '        <div class="layui-input-block">\n' +
+        '            <input type="text" name="dateRecord" value="' + itemInfo.dateRecord + '" required lay-verify="required" class="layui-input" autocomplete="off" readonly style="cursor: not-allowed; ">\n' +
+        '        </div>\n' +
+        '    </div>\n';
+    if (itemInfo.status === 'keep' || itemInfo.status === 'export') {
+        formContainer += '    <div class="layui-form-item">\n' +
+            '        <label class="layui-form-label">入库时间</label>\n' +
+            '        <div class="layui-input-block">\n' +
+            '            <input type="text" name="dateInto" value="' + itemInfo.dateInto + '" class="layui-input pointer" id="edit-dateInto" placeholder="点击选择入库时间" readonly lay-verify="edit-dateIntoVerify" autocomplete="off">\n' +
+            '        </div>\n' +
+            '    </div>\n';
+    }
+    if (itemInfo.status === 'export') {
+        formContainer += '    <div class="layui-form-item">\n' +
+            '        <label class="layui-form-label">出库时间</label>\n' +
+            '        <div class="layui-input-block">\n' +
+            '            <input type="text" name="dateLeave" value="' + itemInfo.dateLeave + '" class="layui-input pointer" id="edit-dateLeave" name="dateLeave" placeholder="点击选择出库时间" readonly lay-verify="edit-dateLeaveVerify" autocomplete="off">\n' +
+            '        </div>\n' +
+            '    </div>\n';
+    }
+    formContainer += '    <div class="layui-form-item">\n' +
+        '        <div class="layui-row layui-col-space15">\n' +
+        '            <div class="layui-col-md3">\n' +
+        '                <label class="layui-form-label">物品长度</label>\n' +
+        '                <div class="layui-input-block">\n' +
+        '                    <input type="number" name="length" value="' + itemInfo.length + '" placeholder="毫米" autocomplete="off" class="layui-input">\n' +
+        '                </div>\n' +
+        '            </div>\n' +
+        '            <div class="layui-col-md3">\n' +
+        '                <label class="layui-form-label">物品宽度</label>\n' +
+        '                <div class="layui-input-block">\n' +
+        '                    <input type="number" name="width" value="' + itemInfo.width + '" placeholder="毫米" autocomplete="off" class="layui-input">\n' +
+        '                </div>\n' +
+        '            </div>\n' +
+        '            <div class="layui-col-md3">\n' +
+        '                <label class="layui-form-label">物品高度</label>\n' +
+        '                <div class="layui-input-block">\n' +
+        '                    <input type="number" name="height" value="' + itemInfo.height + '" placeholder="毫米" autocomplete="off" class="layui-input">\n' +
+        '                </div>\n' +
+        '            </div>\n' +
+        '            <div class="layui-col-md3">\n' +
+        '                <label class="layui-form-label">物品架构</label>\n' +
+        '                <div class="layui-input-block">\n' +
+        '                    <input type="text" name="architecture" value="' + itemInfo.architecture + '" placeholder="x86" autocomplete="off" class="layui-input">\n' +
+        '                </div>\n' +
+        '            </div>\n' +
+        '        </div>\n' +
+        '    </div>\n' +
+        '    <div class="layui-form-item layui-form-text">\n' +
+        '        <label class="layui-form-label">&nbsp;&nbsp;&nbsp;物品描述</label>\n' +
+        '        <div class="layui-input-block">\n' +
+        '            <textarea name="description" placeholder="请输入物品描述" class="layui-textarea">' + itemInfo.description + '</textarea>\n' +
+        '        </div>\n' +
+        '    </div>\n' +
+        '    <div class="layui-form-item layui-hide">\n' +
+        '        <button class="layui-btn" lay-submit lay-filter="form-editItem-submit" id="form-editItem-submit">立即提交</button>\n' +
+        '    </div>\n' +
+        '</form>'
+    layer.open({
+        type: 1
+        , title: '修改物品信息'
+        , content: formContainer
+        , area: ['900px', '750px']
+        , shadeClose: true
+        , resize: false
+        , fixed: true
+        , closeBtn: 0
+        , btn: ['确定', '返回']
+        , success: function (index, layero) {
+            //渲染时间选择控件
+            let inputs = ['#edit-dateInto', '#edit-dateLeave'];
+            for (let i = 0; i < inputs.length; i++) {
+                let temp = layui.laydate.render({
+                    elem: inputs[i]
+                    , type: 'datetime'
+                    , max: '23:59:59'
+                });
+            }
+            editItemFlag = true;
+        }
+        , end: function (index, layero) {
+            editItemFlag = false;
+        }
+        , yes: function (index, layero) {
+            document.getElementById('form-editItem-submit').click();
+            return false;
+        }
+    })
+    ;
+}
+
+//修改所有者信息
+async function editItem(data) {
+    return await postData('/item/edit', data);
 }
 
 //物品入库或出库
@@ -645,23 +900,19 @@ function ownerListShow(uuid) {
         }
         , yes: function (index, layero) {
             var checkStatus = layui.table.checkStatus('table-owner');
-            if (checkStatus.data.length === 0) {
-                //防止没有选择
-                layer.msg('请选择一名所有者', {icon: 0});
-            } else {
-                if (uuid !== undefined) {
-                    layer.confirm('确定为物品添加所有者？', function () {
-                        addNewOwner(uuid, checkStatus.data[0].id).then(function () {
-                            layer.closeAll();
-                            itemInfoShow(uuid);
-                        });
-                    });
-                } else {
-                    document.getElementById('owner-input').value = checkStatus.data[0].name;
-                    ownerChosen = checkStatus.data[0].id;
-                    layer.closeAll();
-                }
+            console.log(checkStatus);
+            let ownerName = '';
+            ownerChosen = '';
+            if (checkStatus.data.length !== 0) {
+                ownerChosen = checkStatus.data[0].id;
+                ownerName = checkStatus.data[0].name;
             }
+            if (editItemFlag) {
+                document.getElementById('edit-owner-input').value = ownerName;
+            } else {
+                document.getElementById('owner-input').value = ownerName;
+            }
+            layer.close(index);
             return false;
         }
     });
@@ -803,39 +1054,52 @@ async function ownerInfoShow(id) {
         , resize: false
         , fixed: true
         , closeBtn: 0
-        , btn: ['返回']
-        // , yes: function (index, layero) {
-        //     editOwnerInfoShow(layero);
-        // }
+        , btn: ['编辑', '返回']
+        , yes: function (index, layero) {
+            editOwnerInfoShow(ownerInfo);
+        }
     });
 }
 
 //显示修改所有者信息弹窗
-function editOwnerInfoShow(layero) {
-    let tbody = layero.children()[1].children[0].children[0].children[0];
-    let nameValue = tbody.children[0].children[1].innerText;
-    ownerEditId = tbody.children[1].children[1].innerText;
-    let phoneNumberValue = tbody.children[2].children[1].innerText;
-    ownerEditDateRegistration = tbody.children[3].children[1].innerText;
-    let noteValue = tbody.children[4].children[1].innerText;
+function editOwnerInfoShow(ownerInfo) {
+    // let tbody = layero.children()[1].children[0].children[0].children[0];
+    // let nameValue = tbody.children[0].children[1].innerText;
+    // ownerEditId = tbody.children[1].children[1].innerText;
+    // let phoneNumberValue = tbody.children[2].children[1].innerText;
+    // ownerEditDateRegistration = tbody.children[3].children[1].innerText;
+    // let noteValue = tbody.children[4].children[1].innerText;
+    console.log(ownerInfo)
     let formContainer = '<div class="content-container">\n' +
         '    <form class="layui-form layui-form-pane" id="form-editOwner" lay-filter="form-editOwner">\n' +
         '        <div class="layui-form-item">\n' +
         '            <label class="layui-form-label">名称</label>\n' +
         '            <div class="layui-input-block">\n' +
-        '                <input type="text" name="name" required lay-verify="required" placeholder="请输入所有者的名称" autocomplete="off" class="layui-input" value="' + nameValue + '">\n' +
+        '                <input type="text" name="name" required lay-verify="required" placeholder="请输入所有者的名称" autocomplete="off" class="layui-input" value="' + ownerInfo.name + '">\n' +
+        '            </div>\n' +
+        '        </div>\n' +
+        '        <div class="layui-form-item">\n' +
+        '            <label class="layui-form-label">编号</label>\n' +
+        '            <div class="layui-input-block">\n' +
+        '                <input type="text" name="id" required lay-verify="required" autocomplete="off" class="layui-input" value="' + ownerInfo.id + '" readonly style="cursor: not-allowed; ">\n' +
         '            </div>\n' +
         '        </div>\n' +
         '        <div class="layui-form-item">\n' +
         '            <label class="layui-form-label">电话</label>\n' +
         '            <div class="layui-input-block">\n' +
-        '                <input type="tel" name="phoneNumber" placeholder="请输入所有者的电话" autocomplete="off" class="layui-input" value="' + phoneNumberValue + '">\n' +
+        '                <input type="tel" name="phoneNumber" placeholder="请输入所有者的电话" autocomplete="off" class="layui-input" value="' + ownerInfo.phoneNumber + '">\n' +
+        '            </div>\n' +
+        '        </div>\n' +
+        '        <div class="layui-form-item">\n' +
+        '            <label class="layui-form-label">注册时间</label>\n' +
+        '            <div class="layui-input-block">\n' +
+        '                <input type="text" name="dateRegistration" required lay-verify="required" autocomplete="off" class="layui-input" value="' + ownerInfo.dateRegistration + '" readonly style="cursor: not-allowed; ">\n' +
         '            </div>\n' +
         '        </div>\n' +
         '        <div class="layui-form-item layui-form-text">\n' +
         '            <label class="layui-form-label">&nbsp;备注</label>\n' +
         '            <div class="layui-input-block">\n' +
-        '                <textarea name="note" placeholder="请输入所有者的备注" class="layui-textarea" >' + noteValue + '</textarea>\n' +
+        '                <textarea name="note" placeholder="请输入所有者的备注" class="layui-textarea" >' + ownerInfo.note + '</textarea>\n' +
         '            </div>\n' +
         '        </div>\n' +
         '        <div class="layui-form-item layui-hide">\n' +
@@ -849,7 +1113,7 @@ function editOwnerInfoShow(layero) {
         type: 1
         , title: '修改所有者信息'
         , content: formContainer
-        , area: ['800px', '400px']
+        , area: ['800px', '550px']
         , shadeClose: true
         , resize: false
         , fixed: true

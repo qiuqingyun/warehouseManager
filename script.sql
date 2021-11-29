@@ -38,9 +38,8 @@ create table role
     constraint role_id_uindex
         unique (id)
 );
+alter table role add primary key (id);
 
-alter table role
-    add primary key (id);
 create table user
 (
     id int auto_increment,
@@ -54,6 +53,6 @@ create table user
     constraint user_t2_id_uindex
         unique (id)
 );
+alter table user add primary key (id);
 
-alter table user
-    add primary key (id);
+insert into db_warehouse.role (name) value ('admin');

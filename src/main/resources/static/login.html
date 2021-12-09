@@ -72,6 +72,9 @@
         </div>
     </div>
 </div>
+<div style="height: 35px;position: fixed;bottom: 0;text-align: center;width: 100%;font-size: 16px;background: white;line-height: 35px">
+    备案号：<a href="https://beian.miit.gov.cn/" target="_blank">您的备案号</a>
+</div>
 <script>
     layui.use('form', function () {
         layui.form.on('submit(formLogin)', function (data) {
@@ -89,7 +92,7 @@
                 , success: function (response) {
                     if (response.result) {
                         window.location.replace("/");
-                    }else{
+                    } else {
                         layer.msg('登录失败', {icon: 2});
                     }
                     return false;

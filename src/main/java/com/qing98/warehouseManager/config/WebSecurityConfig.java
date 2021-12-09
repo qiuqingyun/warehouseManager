@@ -1,6 +1,9 @@
 package com.qing98.warehouseManager.config;
 
+import com.qing98.warehouseManager.controller.WarehouseController;
 import com.qing98.warehouseManager.service.UserServiceImpl;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -19,7 +22,7 @@ import java.io.PrintWriter;
 @Configuration
 @EnableWebSecurity
 public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
-
+    private final static Logger logger = LoggerFactory.getLogger(WebSecurityConfig.class.getName());
     @Autowired
     UserServiceImpl userService;
 
@@ -48,6 +51,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
                 .formLogin()
                 .loginPage("/login.html")
                 .successHandler((req, resp, authentication) -> {
+                    logger.info("Login: ip[" + req.getRemoteAddr() + "] username[" + authentication.getName() + "]");
                     resp.setContentType("application/json;charset=utf-8");
                     PrintWriter out = resp.getWriter();
                     out.write("{\"result\":true}");
@@ -55,6 +59,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
                     out.close();
                 })
                 .failureHandler((req, resp, e) -> {
+                    logger.warn("Login failed: ip[" + req.getRemoteAddr() + "] username[" + req.getParameter("username") + "] password[" + req.getParameter("password") + "]");
                     resp.setContentType("application/json;charset=utf-8");
                     PrintWriter out = resp.getWriter();
                     out.write("{\"result\":false}");
@@ -69,6 +74,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
                 .and()
                 .logout()
                 .logoutSuccessHandler((req, resp, authentication) -> {
+                    logger.info("Logout: ip[" + req.getRemoteAddr() + "] username[" + authentication.getName() + "]");
                     resp.setContentType("application/json;charset=utf-8");
                     PrintWriter out = resp.getWriter();
                     out.write("{\"result\":true}");
